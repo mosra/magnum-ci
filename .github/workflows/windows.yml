@@ -1,4 +1,4 @@
-name: Windows RT - Angle
+name: Angle
 
 on: [push, pull_request]
 
@@ -10,7 +10,9 @@ jobs:
       matrix:
         target: ["windows", "windows-uwp"]
     env:
+      # "If you are a non-googler you need to set DEPOT_TOOLS_WIN_TOOLCHAIN=0"
       DEPOT_TOOLS_WIN_TOOLCHAIN: 0
+      # Bump this to fetch a newer version
       ANGLE_VERSION: 4134
     steps:
     - uses: actions/checkout@v1
