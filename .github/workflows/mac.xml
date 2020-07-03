@@ -23,42 +23,4 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 2.7
-    - name: Dependencies
-      run: |
-        Invoke-WebRequest https://storage.googleapis.com/chrome-infra/depot_tools.zip -O depot_tools.zip
-        7z x depot_tools.zip -o${{ github.workspace }}/depot_tools
-        echo "::add-path::${{ github.workspace }}\depot_tools"
-    - name: Configure
-      run: |
-        mkdir angle\out
-        mkdir angle\out\Release
-        copy args-${{ matrix.target }}.gn angle\out\Release\args.gn
-    - name: Generate
-      run: |
-        cd angle
-        python scripts/bootstrap.py
-        gclient.bat sync
-        git checkout master
-        gn gen out/Release
-    - name: Build
-      run: |
-        cd angle
-        autoninja -C out/Release libEGL libGLESv2
-    - name: Install
-      run: |
-        mkdir install
-        mkdir install\lib
-        mkdir install\bin
-        mkdir install\include
 
-        copy angle\out\Release\d3dcompiler_47.dll install\bin\
-        copy angle\out\Release\libGLESv2.dll.lib install\lib\libGLESv2.lib
-        copy angle\out\Release\libGLESv2.dll install\bin\
-        copy angle\out\Release\libEGL.dll.lib install\lib\libEGL.lib
-        copy angle\out\Release\libEGL.dll install\bin\
-        xcopy /e angle\include\* install\include\
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v1
-      with:
-        name: angle-${{ env.ANGLE_VERSION }}-${{ matrix.target }}
-        path: install
