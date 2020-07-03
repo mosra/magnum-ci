@@ -1,4 +1,4 @@
-name: Angle3
+name: Angle
 
 on: [push, pull_request]
 
