@@ -42,7 +42,6 @@ jobs:
         echo "python scripts/bootstrap.py complete..."
         gclient sync
         echo "gclient sync complete..."
-        git checkout chromium/${{ env.ANGLE_VERSION }}
         gn gen out/Release
     - name: Build
       run: |
