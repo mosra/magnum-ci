@@ -38,7 +38,7 @@ jobs:
         cd angle
         python scripts/bootstrap.py
         gclient.bat sync
-        git checkout master
+        git checkout chromium/${{ env.ANGLE_VERSION }}
         gn gen out/Release
     - name: Build
       run: |
