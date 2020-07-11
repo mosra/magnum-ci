@@ -1,0 +1,67 @@
+name: SwiftShader
+
+on: [push, pull_request]
+
+env:
+  # Ideally use a commit that's verified to work well elsewhere (Arch
+  # swiftshader-git package, for example)
+  COMMIT: a6940c8e6eb0c61c433ed4b61ae04c12ff37bfbb
+
+# Mostly just copied from here, with ES1 disabled:
+# https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=swiftshader-git
+jobs:
+  ubuntu:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-18.04]
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@v1
+    - name: Clone SwiftShader
+      uses: actions/checkout@v2
+      with:
+        repository: google/swiftshader
+        ref: ${{ env.COMMIT }}
+        path: swiftshader
+        # Yeah, I know, but the repo has no tags, and we use number of commits
+        # for SWIFTSHADER_VERSION.
+        fetch-depth: 0
+    - name: Init & update submodules, fetch version
+      run: |
+        git -C swiftshader submodule init
+        git -C swiftshader submodule update
+        SWIFTSHADER_VERSION="r$(git -C swiftshader rev-list --count HEAD).$(git -C swiftshader rev-parse --short=10 HEAD)"
+        echo "version: $SWIFTSHADER_VERSION"
+        echo "::set-env name=SWIFTSHADER_VERSION::$SWIFTSHADER_VERSION"
+    - name: Configure
+      run: |
+        cmake \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DSWIFTSHADER_BUILD_GLES_CM=OFF \
+          -DSWIFTSHADER_BUILD_PVR=OFF \
+          -DSWIFTSHADER_WARNINGS_AS_ERRORS=OFF \
+          -S swiftshader -B build
+    - name: Build
+      run: |
+        ninja -C build
+    - name: Install
+      run: |
+        install -dm755 install/lib
+        install -m755 -t install/lib \
+          build/libEGL.so \
+          build/libGLESv2.so \
+          build/libvk_swiftshader.so
+
+        install -dm755 install/share/vulkan/icd.d/
+        install -m644 -t install/share/vulkan/icd.d/ \
+          build/Linux/vk_swiftshader_icd.json
+        sed 's#./libvk_swiftshader.so#../../../lib/libvk_swiftshader.so#' \
+          -i install/share/vulkan/icd.d/vk_swiftshader_icd.json
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: swiftshader-${{ env.SWIFTSHADER_VERSION }}-${{ matrix.os }}
+        path: install
