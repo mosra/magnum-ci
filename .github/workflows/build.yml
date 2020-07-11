@@ -42,6 +42,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release \
           -DSWIFTSHADER_BUILD_GLES_CM=OFF \
           -DSWIFTSHADER_BUILD_PVR=OFF \
+          -DSWIFTSHADER_BUILD_TESTS=OFF \
           -DSWIFTSHADER_WARNINGS_AS_ERRORS=OFF \
           -S swiftshader -B build
     - name: Build
@@ -98,6 +99,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release \
           -DSWIFTSHADER_BUILD_GLES_CM=OFF \
           -DSWIFTSHADER_BUILD_PVR=OFF \
+          -DSWIFTSHADER_BUILD_TESTS=OFF \
           -DSWIFTSHADER_WARNINGS_AS_ERRORS=OFF \
           -S swiftshader -B build
     - name: Build
