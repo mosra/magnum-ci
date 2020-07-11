@@ -24,6 +24,7 @@ jobs:
       with:
         python-version: 2.7
     - name: Dependencies
+      # https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#adding-a-system-path
       run: |
         Invoke-WebRequest https://storage.googleapis.com/chrome-infra/depot_tools.zip -O depot_tools.zip
         7z x depot_tools.zip -o${{ github.workspace }}/depot_tools

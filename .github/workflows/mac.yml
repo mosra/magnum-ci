@@ -22,12 +22,10 @@ jobs:
       with:
         python-version: 2.7
     - name: Dependencies
+      # https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#adding-a-system-path
       run: |
         git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
-        cd depot_tools
-        cd ..
-        export PATH="${{ github.workspace }}/depot_tools:$PATH"
-        echo $PATH
+        echo "::add-path::${{ github.workspace }}/depot_tools"
     - name: Configure
       run: |
         mkdir angle/out
@@ -35,18 +33,12 @@ jobs:
         cp args-${{ matrix.target }}.gn angle/out/Release/args.gn
     - name: Generate
       run: |
-        export PATH="${{ github.workspace }}/depot_tools:$PATH"
-        echo $PATH
         cd angle
         python scripts/bootstrap.py
-        echo "python scripts/bootstrap.py complete..."
         gclient sync
-        echo "gclient sync complete..."
         gn gen out/Release
     - name: Build
       run: |
-        export PATH="${{ github.workspace }}/depot_tools:$PATH"
-        echo $PATH
         cd angle
         autoninja -C out/Release libEGL libGLESv2
     - name: Install
