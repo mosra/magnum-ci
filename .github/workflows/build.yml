@@ -15,7 +15,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-18.04]
+        os: [ubuntu-16.04]
     steps:
     - name: Install Ninja
       uses: seanmiddleditch/gha-setup-ninja@v1
@@ -36,9 +36,12 @@ jobs:
         echo "version: $SWIFTSHADER_VERSION"
         echo "::set-env name=SWIFTSHADER_VERSION::$SWIFTSHADER_VERSION"
     - name: Configure
+      # Vulkan libs don't build with GCC 5, using GCC 7 instead.
       run: |
         cmake \
           -G Ninja \
+          -DCMAKE_C_COMPILER=gcc-7 \
+          -DCMAKE_CXX_COMPILER=g++-7 \
           -DCMAKE_BUILD_TYPE=Release \
           -DSWIFTSHADER_BUILD_GLES_CM=OFF \
           -DSWIFTSHADER_BUILD_PVR=OFF \
