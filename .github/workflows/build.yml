@@ -153,7 +153,7 @@ jobs:
       run: |
         git -C swiftshader submodule init
         git -C swiftshader submodule update
-        $SWIFTSHADER_VERSION="$(git -C swiftshader rev-list --count HEAD).$(git -C swiftshader rev-parse --short=10 HEAD)"
+        $SWIFTSHADER_VERSION="r$(git -C swiftshader rev-list --count HEAD).$(git -C swiftshader rev-parse --short=10 HEAD)"
         echo "version: $SWIFTSHADER_VERSION"
         echo "::set-env name=SWIFTSHADER_VERSION::$SWIFTSHADER_VERSION"
     - name: Configure
