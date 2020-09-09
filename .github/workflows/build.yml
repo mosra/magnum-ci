@@ -10,12 +10,12 @@ env:
 # Mostly just copied from here, with ES1 disabled:
 # https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=swiftshader-git
 jobs:
-  ubuntu:
-    name: ${{ matrix.os }}
+  ubuntu-gles:
+    name: GLES, ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-16.04]
+        os: [ubuntu-16.04, ubuntu-18.04]
     steps:
     - name: Install Ninja
       uses: seanmiddleditch/gha-setup-ninja@v1
@@ -36,14 +36,13 @@ jobs:
         echo "version: $SWIFTSHADER_VERSION"
         echo "::set-env name=SWIFTSHADER_VERSION::$SWIFTSHADER_VERSION"
     - name: Configure
-      # Vulkan libs don't build with GCC 5, using GCC 7 instead.
       run: |
         cmake \
           -G Ninja \
-          -DCMAKE_C_COMPILER=gcc-7 \
-          -DCMAKE_CXX_COMPILER=g++-7 \
           -DCMAKE_BUILD_TYPE=Release \
           -DSWIFTSHADER_BUILD_GLES_CM=OFF \
+          -DSWIFTSHADER_BUILD_GLESv2=ON \
+          -DSWIFTSHADER_BUILD_VULKAN=OFF \
           -DSWIFTSHADER_BUILD_PVR=OFF \
           -DSWIFTSHADER_BUILD_TESTS=OFF \
           -DSWIFTSHADER_WARNINGS_AS_ERRORS=OFF \
@@ -56,7 +55,58 @@ jobs:
         install -dm755 install/lib
         install -m755 -t install/lib \
           build/libEGL.so \
-          build/libGLESv2.so \
+          build/libGLESv2.so
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: swiftshader-gles-${{ env.SWIFTSHADER_VERSION }}-${{ matrix.os }}
+        path: install
+
+  ubuntu-vulkan:
+    name: Vulkan, ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # Vulkan libs don't build with GCC 5 on 16.04, use just 18.04
+        os: [ubuntu-18.04]
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@v1
+    - name: Clone SwiftShader
+      uses: actions/checkout@v2
+      with:
+        repository: google/swiftshader
+        ref: ${{ env.COMMIT }}
+        path: swiftshader
+        # Yeah, I know, but the repo has no tags, and we use number of commits
+        # for SWIFTSHADER_VERSION.
+        fetch-depth: 0
+    - name: Init & update submodules, fetch version
+      run: |
+        git -C swiftshader submodule init
+        git -C swiftshader submodule update
+        SWIFTSHADER_VERSION="r$(git -C swiftshader rev-list --count HEAD).$(git -C swiftshader rev-parse --short=10 HEAD)"
+        echo "version: $SWIFTSHADER_VERSION"
+        echo "::set-env name=SWIFTSHADER_VERSION::$SWIFTSHADER_VERSION"
+    - name: Configure
+      run: |
+        cmake \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DSWIFTSHADER_BUILD_GLES_CM=OFF \
+          -DSWIFTSHADER_BUILD_GLESv2=OFF \
+          -DSWIFTSHADER_BUILD_VULKAN=ON \
+          -DSWIFTSHADER_BUILD_PVR=OFF \
+          -DSWIFTSHADER_BUILD_TESTS=OFF \
+          -DSWIFTSHADER_WARNINGS_AS_ERRORS=OFF \
+          -S swiftshader -B build
+    - name: Build
+      run: |
+        ninja -C build
+    - name: Install
+      run: |
+        install -dm755 install/lib
+        install -m755 -t install/lib \
           build/libvk_swiftshader.so
 
         install -dm755 install/share/vulkan/icd.d/
@@ -67,7 +117,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
       with:
-        name: swiftshader-${{ env.SWIFTSHADER_VERSION }}-${{ matrix.os }}
+        name: swiftshader-vulkan-${{ env.SWIFTSHADER_VERSION }}-${{ matrix.os }}
         path: install
 
   mac:
@@ -101,6 +151,8 @@ jobs:
           -G Ninja \
           -DCMAKE_BUILD_TYPE=Release \
           -DSWIFTSHADER_BUILD_GLES_CM=OFF \
+          -DSWIFTSHADER_BUILD_GLESv2=ON \
+          -DSWIFTSHADER_BUILD_VULKAN=ON \
           -DSWIFTSHADER_BUILD_PVR=OFF \
           -DSWIFTSHADER_BUILD_TESTS=OFF \
           -DSWIFTSHADER_WARNINGS_AS_ERRORS=OFF \
@@ -167,6 +219,8 @@ jobs:
           -DCMAKE_CXX_COMPILER=cl.exe `
           -DCMAKE_BUILD_TYPE=Release `
           -DSWIFTSHADER_BUILD_GLES_CM=OFF `
+          -DSWIFTSHADER_BUILD_GLESv2=ON `
+          -DSWIFTSHADER_BUILD_VULKAN=ON `
           -DSWIFTSHADER_BUILD_PVR=OFF `
           -DSWIFTSHADER_BUILD_TESTS=OFF `
           -DSWIFTSHADER_WARNINGS_AS_ERRORS=OFF `
