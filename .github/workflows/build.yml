@@ -1,0 +1,52 @@
+name: Vulkan Loader
+
+on: [push, pull_request]
+
+env:
+  VULKAN_VERSION: 1.2.153
+
+# So far we need this only on Mac as it can't be installed through Homebrew
+jobs:
+  mac:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-10.15]
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@v1
+    - name: Clone Vulkan-Headers
+      uses: actions/checkout@v2
+      with:
+        repository: KhronosGroup/Vulkan-Headers
+        ref: v${{ env.VULKAN_VERSION }}
+        path: headers
+    - name: Clone Vulkan-Loader
+      uses: actions/checkout@v2
+      with:
+        repository: KhronosGroup/Vulkan-Loader
+        ref: v${{ env.VULKAN_VERSION }}
+        path: loader
+    - name: Build & install headers
+      run: |
+        cmake \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/install-headers \
+          -S headers -B build-headers
+        ninja -C build-headers install
+    - name: Build & install loader
+      run: |
+        cmake \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -DVULKAN_HEADERS_INSTALL_DIR=$(pwd)/install-headers \
+          -S loader -B build
+        ninja -C build install
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: vulkan-loader-${{ env.VULKAN_VERSION }}-${{ matrix.os }}
+        path: install
