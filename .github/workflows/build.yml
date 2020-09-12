@@ -15,6 +15,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        # On 16.04 it uses GCC 5, not GCC 4.8, because it can't build on that
+        # one. That's fine however, there are no issues when linking Magnum
+        # built with GCC 4.8 against SwiftShader built with GCC 5.
         os: [ubuntu-16.04, ubuntu-18.04]
     steps:
     - name: Install Ninja
