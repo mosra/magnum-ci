@@ -50,3 +50,53 @@ jobs:
       with:
         name: vulkan-loader-${{ env.VULKAN_VERSION }}-${{ matrix.os }}
         path: install
+
+  windows:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-2019]
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@v1
+    - name: Set up Visual Studio environment
+      uses: seanmiddleditch/gha-setup-vsdevenv@v1
+    - name: Clone Vulkan-Headers
+      uses: actions/checkout@v2
+      with:
+        repository: KhronosGroup/Vulkan-Headers
+        ref: v${{ env.VULKAN_VERSION }}
+        path: headers
+    - name: Clone Vulkan-Loader
+      uses: actions/checkout@v2
+      with:
+        repository: KhronosGroup/Vulkan-Loader
+        ref: v${{ env.VULKAN_VERSION }}
+        path: loader
+    - name: Build & install headers
+      run: |
+        cmake ^
+          -G Ninja ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install-headers ^
+          -S headers -B build-headers
+        ninja -C build-headers install
+      shell: cmd
+    - name: Build & install loader
+      run: |
+        cmake ^
+          -G Ninja ^
+          -DCMAKE_C_COMPILER=cl.exe ^
+          -DCMAKE_CXX_COMPILER=cl.exe ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
+          -DVULKAN_HEADERS_INSTALL_DIR=%CD:\=/%/install-headers ^
+          -S loader -B build
+        ninja -C build install
+      shell: cmd
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: vulkan-loader-${{ env.VULKAN_VERSION }}-${{ matrix.os }}
+        path: install
