@@ -165,27 +165,36 @@ jobs:
         ninja -C build
     - name: Install
       run: |
-        install -dm755 install/lib
+        install -dm755 install-gles/lib
+        install -dm755 install-vulkan/lib
+
         # There's no install -t on macOS
         install -m755 \
           build/libEGL.dylib \
           build/libGLESv2.dylib \
+          install-gles/lib
+        install -m755 \
           build/libvk_swiftshader.dylib \
-          install/lib
+          install-vulkan/lib
 
-        install -dm755 install/share/vulkan/icd.d/
+        install -dm755 install-vulkan/share/vulkan/icd.d/
         install -m644 build/Darwin/vk_swiftshader_icd.json \
-          install/share/vulkan/icd.d/
+          install-vulkan/share/vulkan/icd.d/
         # There's no sed -i on macOS, need to provide an extension and then
         # delete the backup
         sed -e 's#./libvk_swiftshader.dylib#../../../lib/libvk_swiftshader.dylib#' \
-          -i'.old' install/share/vulkan/icd.d/vk_swiftshader_icd.json
-        rm install/share/vulkan/icd.d/vk_swiftshader_icd.json.old
-    - name: Upload artifacts
+          -i'.old' install-vulkan/share/vulkan/icd.d/vk_swiftshader_icd.json
+        rm install-vulkan/share/vulkan/icd.d/vk_swiftshader_icd.json.old
+    - name: Upload GLES artifacts
       uses: actions/upload-artifact@v1
       with:
-        name: swiftshader-${{ env.SWIFTSHADER_VERSION }}-${{ matrix.os }}
-        path: install
+        name: swiftshader-gles-${{ env.SWIFTSHADER_VERSION }}-${{ matrix.os }}
+        path: install-gles
+    - name: Upload Vulkan artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: swiftshader-vulkan-${{ env.SWIFTSHADER_VERSION }}-${{ matrix.os }}
+        path: install-vulkan
 
   windows:
     name: ${{ matrix.os }}
@@ -233,22 +242,29 @@ jobs:
         ninja -C build
     - name: Install
       run: |
-        mkdir install\bin
-        mkdir install\lib
-        mkdir install\share\vulkan\icd.d
+        mkdir install-gles\bin
+        mkdir install-gles\lib
+        mkdir install-vulkan\bin
+        mkdir install-vulkan\lib
+        mkdir install-vulkan\share\vulkan\icd.d
 
-        copy build\libEGL.dll install\bin\
-        copy build\src\OpenGL\libEGL\libEGL.lib install\lib\
-        copy build\libGLESv2.dll install\bin\
-        copy build\src\OpenGL\libGLESv2\libGLESv2.lib install\lib\
-        copy build\vk_swiftshader.dll install\bin\
-        copy build\src\Vulkan\vk_swiftshader.lib install\lib\
+        copy build\libEGL.dll install-gles\bin\
+        copy build\src\OpenGL\libEGL\libEGL.lib install-gles\lib\
+        copy build\libGLESv2.dll install-gles\bin\
+        copy build\src\OpenGL\libGLESv2\libGLESv2.lib install-gles\lib\
+        copy build\vk_swiftshader.dll install-vulkan\bin\
+        copy build\src\Vulkan\vk_swiftshader.lib install-vulkan\lib\
 
         (Get-Content build\Windows\vk_swiftshader_icd.json) `
           -replace '\.\\\\vk_swiftshader\.dll', '..\\..\\..\\bin\\vk_swiftshader.dll' `
-          | Out-File -encoding UTF8 install\share\vulkan\icd.d\vk_swiftshader_icd.json
-    - name: Upload artifacts
+          | Out-File -encoding UTF8 install-vulkan\share\vulkan\icd.d\vk_swiftshader_icd.json
+    - name: Upload GLES artifacts
       uses: actions/upload-artifact@v1
       with:
-        name: swiftshader-${{ env.SWIFTSHADER_VERSION }}-${{ matrix.os }}
-        path: install
+        name: swiftshader-gles-${{ env.SWIFTSHADER_VERSION }}-${{ matrix.os }}
+        path: install-gles
+    - name: Upload Vulkan artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: swiftshader-vulkan-${{ env.SWIFTSHADER_VERSION }}-${{ matrix.os }}
+        path: install-vulkan
