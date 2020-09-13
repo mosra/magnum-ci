@@ -66,11 +66,11 @@ jobs:
         path: install
 
   mac:
-    name: ${{ matrix.target }}
-    runs-on: macos-latest
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        target: ["mac"]
+        os: [macos-10.15]
     steps:
     - uses: actions/checkout@v1
     - name: Clone
@@ -89,7 +89,7 @@ jobs:
       run: |
         mkdir angle/out
         mkdir angle/out/Release
-        cp args-${{ matrix.target }}.gn angle/out/Release/args.gn
+        cp args-mac.gn angle/out/Release/args.gn
     - name: Generate
       run: |
         cd angle
@@ -113,5 +113,5 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
       with:
-        name: angle-${{ env.ANGLE_VERSION }}-${{ matrix.target }}
+        name: angle-${{ env.ANGLE_VERSION }}-${{ matrix.os }}
         path: install
