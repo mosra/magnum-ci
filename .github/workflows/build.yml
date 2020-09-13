@@ -105,11 +105,11 @@ jobs:
     - name: Install
       run: |
         mkdir install
-        mkdir install/bin
+        mkdir install/lib
         mkdir install/include
 
-        cp angle/out/Release/libEGL.dylib install/bin/
-        cp angle/out/Release/libGLESv2.dylib install/bin
+        cp angle/out/Release/libEGL.dylib install/lib/
+        cp angle/out/Release/libGLESv2.dylib install/lib
 
         cp -R angle/include/* install/include/
     - name: Upload artifacts
@@ -157,10 +157,10 @@ jobs:
     - name: Install
       run: |
         mkdir install
-        mkdir install/bin
+        mkdir install/lib
         mkdir install/include
-        cp angle/out/Release/libEGL.so install/bin/
-        cp angle/out/Release/libGLESv2.so install/bin
+        cp angle/out/Release/libEGL.so install/lib/
+        cp angle/out/Release/libGLESv2.so install/lib
         cp -R angle/include/* install/include/
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
