@@ -1,0 +1,46 @@
+name: SPIRV-Tools
+
+on: [push, pull_request]
+
+env:
+  SPIRV_VERSION: 1.5.3.reservations1
+  VERSION: 2020.5
+
+jobs:
+  ubuntu:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-16.04]
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@v1
+    - name: Clone SPIRV-Tools
+      uses: actions/checkout@v2
+      with:
+        repository: KhronosGroup/SPIRV-Tools
+        ref: v${{ env.VERSION }}
+        # FUCKING HELL, why this isn't the default and why it implicitly clones
+        # to magnum-ci?! what the fuck?!
+        path: SPIRV-Tools
+    - name: Clone SPIRV-Headers
+      uses: actions/checkout@v2
+      with:
+        repository: KhronosGroup/SPIRV-Headers
+        ref: ${{ env.SPIRV_VERSION }}
+        path: SPIRV-Tools/external/spirv-headers
+    - name: Build & install
+      run: |
+        cmake \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -DSPIRV_SKIP_EXECUTABLES=ON \
+          -S SPIRV-Tools -B build
+        ninja -C build install/strip
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: spirv-tools-${{ env.VERSION }}-${{ matrix.os }}
+        path: install
