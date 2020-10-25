@@ -77,11 +77,21 @@ jobs:
           -G Ninja ^
           -DCMAKE_C_COMPILER=cl.exe ^
           -DCMAKE_CXX_COMPILER=cl.exe ^
+          -DCMAKE_BUILD_TYPE=Debug ^
+          -DCMAKE_DEBUG_POSTFIX=-d ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
+          -DSPIRV_SKIP_EXECUTABLES=ON ^
+          -S SPIRV-Tools -B build-debug
+        cmake ^
+          -G Ninja ^
+          -DCMAKE_C_COMPILER=cl.exe ^
+          -DCMAKE_CXX_COMPILER=cl.exe ^
           -DCMAKE_BUILD_TYPE=Release ^
           -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
           -DSPIRV_SKIP_EXECUTABLES=ON ^
-          -S SPIRV-Tools -B build
-        ninja -C build install
+          -S SPIRV-Tools -B build-release
+        ninja -C build-debug install
+        ninja -C build-release install
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
       with:
