@@ -1,0 +1,111 @@
+name: glslang
+
+on: [push, pull_request]
+
+env:
+  # If you want to get more angry, check the HELL OF A MESS over at
+  # https://github.com/KhronosGroup/glslang/releases
+  VERSION: 8.13.3743
+
+jobs:
+  ubuntu:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-16.04]
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@v1
+    - name: Clone glslang
+      uses: actions/checkout@v2
+      with:
+        repository: KhronosGroup/glslang
+        ref: ${{ env.VERSION }}
+        # FUCKING HELL, why this isn't the default and why it implicitly clones
+        # to magnum-ci?! what the fuck?!
+        path: glslang
+    - name: Build & install
+      # Why am I not surprised that this enables tests and other useless shit
+      # by default. I'm not interested in anything related to spirv-tools here
+      # because I'm doing that myself, better.
+      run: |
+        cmake \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -DBUILD_TESTING=OFF \
+          -DENABLE_CTEST=OFF \
+          -DENABLE_GLSLANG_BINARIES=OFF \
+          -DENABLE_OPT=OFF \
+          -DENABLE_SPVREMAPPER=OFF \
+          -S glslang -B build
+        ninja -C build install/strip
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: glslang-${{ env.VERSION }}-${{ matrix.os }}
+        path: install
+
+  windows:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-2019]
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@v1
+    - name: Set up Visual Studio environment
+      uses: seanmiddleditch/gha-setup-vsdevenv@v1
+    - name: Clone glslang
+      uses: actions/checkout@v2
+      with:
+        repository: KhronosGroup/glslang
+        ref: ${{ env.VERSION }}
+        # FUCKING HELL, why this isn't the default and why it implicitly clones
+        # to magnum-ci?! what the fuck?!
+        path: glslang
+    - name: Build & install Debug
+      shell: cmd
+      run: |
+        cmake ^
+          -G Ninja ^
+          -DCMAKE_C_COMPILER=cl.exe ^
+          -DCMAKE_CXX_COMPILER=cl.exe ^
+          -DCMAKE_BUILD_TYPE=Debug ^
+          -DCMAKE_DEBUG_POSTFIX=-d ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install-debug ^
+          -DBUILD_TESTING=OFF ^
+          -DENABLE_CTEST=OFF ^
+          -DENABLE_GLSLANG_BINARIES=OFF ^
+          -DENABLE_OPT=OFF ^
+          -DENABLE_SPVREMAPPER=OFF ^
+          -S glslang -B build-debug
+        ninja -C build-debug install
+    - name: Build & install Release
+      shell: cmd
+      run: |
+        cmake ^
+          -G Ninja ^
+          -DCMAKE_C_COMPILER=cl.exe ^
+          -DCMAKE_CXX_COMPILER=cl.exe ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
+          -DBUILD_TESTING=OFF ^
+          -DENABLE_CTEST=OFF ^
+          -DENABLE_GLSLANG_BINARIES=OFF ^
+          -DENABLE_OPT=OFF ^
+          -DENABLE_SPVREMAPPER=OFF ^
+          -S glslang -B build
+        ninja -C build install
+    - name: Upload Debug artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: glslang-${{ env.VERSION }}-${{ matrix.os }}-debug
+        path: install-debug
+    - name: Upload Release artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: glslang-${{ env.VERSION }}-${{ matrix.os }}
+        path: install
