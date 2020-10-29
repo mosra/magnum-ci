@@ -9,12 +9,21 @@ env:
 
 jobs:
   ubuntu:
-    name: ${{ matrix.os }}
+    name: ${{ matrix.os }}-gcc${{ matrix.env.GCC }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-16.04]
+        include:
+        - os: ubuntu-16.04
+          env:
+            GCC: 4.8
+        - os: ubuntu-16.04
+          env:
+            GCC: 5
     steps:
+    - name: Install GCC 4.8
+      run: sudo apt-get install g++-4.8
+      if: ${{ matrix.env.GCC == '4.8' }}
     - name: Install Ninja
       uses: seanmiddleditch/gha-setup-ninja@v1
     - name: Clone glslang
@@ -32,6 +41,8 @@ jobs:
       run: |
         cmake \
           -G Ninja \
+          -DCMAKE_C_COMPILER=gcc-${{ matrix.env.GCC }} \
+          -DCMAKE_CXX_COMPILER=g++-${{ matrix.env.GCC }} \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
           -DBUILD_TESTING=OFF \
@@ -44,7 +55,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
       with:
-        name: glslang-${{ env.VERSION }}-${{ matrix.os }}
+        name: glslang-${{ env.VERSION }}-${{ matrix.os }}-gcc${{ matrix.env.GCC }}
         path: install
 
   windows:
