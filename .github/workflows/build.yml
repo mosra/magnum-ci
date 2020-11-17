@@ -1,0 +1,33 @@
+name: Freetype
+
+on: [push, pull_request]
+
+env:
+  # Bump this to fetch a newer version
+  FREETYPE_VERSION: 2.10.4
+
+jobs:
+  windows:
+    name: ${{ matrix.target }}
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        target: ["win64"]
+    steps:
+    - name: Download sources
+      run: |
+        Invoke-WebRequest https://download.savannah.gnu.org/releases/freetype/freetype-${{ env.FREETYPE_VERSION }}.tar.gz -O freetype.tar.gz
+        tar xzvf freetype.tar.gz
+    - name: Generate
+      run: |
+        cd freetype-${{ env.FREETYPE_VERSION }}
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
+    - name: Build & Package
+      run: |
+        cd freetype-${{ env.FREETYPE_VERSION }}
+        cmake --build build --config Release --target install
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: freetype-${{ env.FREETYPE_VERSION }}-${{ matrix.target }}
+        path: install
