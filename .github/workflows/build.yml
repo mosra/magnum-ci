@@ -1,4 +1,4 @@
-name: Freetype
+name: FreeType
 
 on: [push, pull_request]
 
@@ -8,11 +8,11 @@ env:
 
 jobs:
   windows:
-    name: ${{ matrix.target }}
-    runs-on: windows-latest
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        target: ["win64"]
+        os: [windows-2019]
     steps:
     - name: Download sources
       run: |
@@ -29,5 +29,5 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
       with:
-        name: freetype-${{ env.FREETYPE_VERSION }}-${{ matrix.target }}
+        name: freetype-${{ env.FREETYPE_VERSION }}-${{ matrix.os }}
         path: install
