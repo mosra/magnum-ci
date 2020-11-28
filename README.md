@@ -61,7 +61,7 @@ and Vulkan.
 
 -   **Build file:** [`build.yml`](https://github.com/mosra/magnum-ci/blob/swiftshader/.github/workflows/build.yml)
 -   **All builds**: [GitHub Actions](https://github.com/mosra/magnum-ci/actions?query=workflow%3ASwiftShader)
--   **Latest known-good build**: [r5464.a6940c8e6e](https://github.com/mosra/magnum-ci/actions/runs/246178301), [upstream commit](https://github.com/google/swiftshader/commit/a6940c8e6e) (2020-09-09)
+-   **Latest known-good build**: [r5464.a6940c8e6e](https://github.com/mosra/magnum-ci/actions/runs/251407425), [upstream commit](https://github.com/google/swiftshader/commit/a6940c8e6e) (2020-09-09)
     -   using LLVM 7 (not 10 yet, although it's available)
     -   Windows MSVC2019
     -   macOS 10.15
