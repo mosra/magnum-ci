@@ -21,7 +21,7 @@ jobs:
         os: [ubuntu-16.04, ubuntu-18.04]
     steps:
     - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@v1
+      uses: seanmiddleditch/gha-setup-ninja@v3
     - name: Clone SwiftShader
       uses: actions/checkout@v2
       with:
@@ -37,7 +37,7 @@ jobs:
         git -C swiftshader submodule update
         SWIFTSHADER_VERSION="r$(git -C swiftshader rev-list --count HEAD).$(git -C swiftshader rev-parse --short=10 HEAD)"
         echo "version: $SWIFTSHADER_VERSION"
-        echo "::set-env name=SWIFTSHADER_VERSION::$SWIFTSHADER_VERSION"
+        echo "SWIFTSHADER_VERSION=$SWIFTSHADER_VERSION" >> $GITHUB_ENV
     - name: Configure
       run: |
         cmake \
@@ -74,7 +74,7 @@ jobs:
         os: [ubuntu-18.04]
     steps:
     - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@v1
+      uses: seanmiddleditch/gha-setup-ninja@v3
     - name: Clone SwiftShader
       uses: actions/checkout@v2
       with:
@@ -90,7 +90,7 @@ jobs:
         git -C swiftshader submodule update
         SWIFTSHADER_VERSION="r$(git -C swiftshader rev-list --count HEAD).$(git -C swiftshader rev-parse --short=10 HEAD)"
         echo "version: $SWIFTSHADER_VERSION"
-        echo "::set-env name=SWIFTSHADER_VERSION::$SWIFTSHADER_VERSION"
+        echo "SWIFTSHADER_VERSION=$SWIFTSHADER_VERSION" >> $GITHUB_ENV
     - name: Configure
       run: |
         cmake \
@@ -131,7 +131,7 @@ jobs:
         os: [macos-10.15]
     steps:
     - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@v1
+      uses: seanmiddleditch/gha-setup-ninja@v3
     - name: Clone SwiftShader
       uses: actions/checkout@v2
       with:
@@ -147,7 +147,7 @@ jobs:
         git -C swiftshader submodule update
         SWIFTSHADER_VERSION="r$(git -C swiftshader rev-list --count HEAD).$(git -C swiftshader rev-parse --short=10 HEAD)"
         echo "version: $SWIFTSHADER_VERSION"
-        echo "::set-env name=SWIFTSHADER_VERSION::$SWIFTSHADER_VERSION"
+        echo "SWIFTSHADER_VERSION=$SWIFTSHADER_VERSION" >> $GITHUB_ENV
     - name: Configure
       run: |
         cmake \
@@ -204,9 +204,9 @@ jobs:
         os: [windows-2019]
     steps:
     - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@v1
+      uses: seanmiddleditch/gha-setup-ninja@v3
     - name: Set up Visual Studio environment
-      uses: seanmiddleditch/gha-setup-vsdevenv@v1
+      uses: seanmiddleditch/gha-setup-vsdevenv@v3
     - name: Clone SwiftShader
       uses: actions/checkout@v2
       with:
@@ -222,7 +222,7 @@ jobs:
         git -C swiftshader submodule update
         $SWIFTSHADER_VERSION="r$(git -C swiftshader rev-list --count HEAD).$(git -C swiftshader rev-parse --short=10 HEAD)"
         echo "version: $SWIFTSHADER_VERSION"
-        echo "::set-env name=SWIFTSHADER_VERSION::$SWIFTSHADER_VERSION"
+        echo "SWIFTSHADER_VERSION=$SWIFTSHADER_VERSION" >> $GITHUB_ENV
     - name: Configure
       run: |
         cmake `
