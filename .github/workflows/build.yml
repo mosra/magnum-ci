@@ -11,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2019]
+        os: [windows-2019, windows-2016]
     steps:
     - name: Set up NASM
       uses: ilammy/setup-nasm@v1
@@ -26,15 +26,17 @@ jobs:
         ref: ${{ env.JPEG_VERSION }}
         path: jpeg-turbo
     - name: Build & install
+      # -S and -B is only since CMake 3.13, Windows 2016 uses 3.12 even though
+      # the README says 3.19.1
       run: |
-        cmake ^
-          -G Ninja ^
+        mkdir build && cd build
+        cmake ../jpeg-turbo ^
           -DCMAKE_C_COMPILER=cl.exe ^
           -DCMAKE_BUILD_TYPE=Release ^
           -DWITH_JPEG8=ON ^
-          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
-          -S jpeg-turbo -B build
-        ninja -C build install
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/../install ^
+          -G Ninja
+        ninja install
       shell: cmd
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
