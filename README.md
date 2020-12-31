@@ -15,6 +15,19 @@ and Metal on Mac.
     -   Windows UWP
     -   macOS
 
+Assimp
+======
+
+https://www.assimp.org — Asset import library.
+
+-   **Build file:** [`build.yml`](https://github.com/mosra/magnum-ci/blob/assimp/.github/workflows/build.yml)
+-   **All builds**: [GitHub Actions](https://github.com/mosra/magnum-ci/actions?query=workflow%3AAssimp)
+-   **Latest known-good build**: [5.0.1](https://github.com/mosra/magnum-ci/actions/runs/454668343) (2020-12-31)
+    -   Windows MSVC2019
+    -   Windows MSVC2019 Debug
+    -   Windows MSVC2017
+    -   Windows MSVC2017 Debug
+
 FreeType
 ========
 
