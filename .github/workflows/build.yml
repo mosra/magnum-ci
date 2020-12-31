@@ -61,7 +61,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2019]
+        os: [windows-2019, windows-2016]
     steps:
     - name: Install Ninja
       uses: seanmiddleditch/gha-setup-ninja@v3
@@ -83,29 +83,33 @@ jobs:
         path: SPIRV-Tools/external/spirv-headers
     - name: Build & install Debug
       shell: cmd
+      # -S and -B is only since CMake 3.13, Windows 2016 uses 3.12 even though
+      # the README says 3.19.1
       run: |
-        cmake ^
-          -G Ninja ^
+        mkdir build-debug && cd build-debug
+        cmake ../SPIRV-Tools ^
           -DCMAKE_C_COMPILER=cl.exe ^
           -DCMAKE_CXX_COMPILER=cl.exe ^
           -DCMAKE_BUILD_TYPE=Debug ^
           -DCMAKE_DEBUG_POSTFIX=-d ^
-          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install-debug ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/../install-debug ^
           -DSPIRV_SKIP_EXECUTABLES=ON ^
-          -S SPIRV-Tools -B build-debug
-        ninja -C build-debug install
+          -G Ninja
+        ninja install
     - name: Build & install Release
       shell: cmd
+      # -S and -B is only since CMake 3.13, Windows 2016 uses 3.12 even though
+      # the README says 3.19.1
       run: |
-        cmake ^
-          -G Ninja ^
+        mkdir build && cd build
+        cmake ../SPIRV-Tools ^
           -DCMAKE_C_COMPILER=cl.exe ^
           -DCMAKE_CXX_COMPILER=cl.exe ^
           -DCMAKE_BUILD_TYPE=Release ^
-          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/../install ^
           -DSPIRV_SKIP_EXECUTABLES=ON ^
-          -S SPIRV-Tools -B build
-        ninja -C build install
+          -G Ninja
+        ninja install
     - name: Upload Debug artifacts
       uses: actions/upload-artifact@v1
       with:
