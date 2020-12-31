@@ -34,6 +34,8 @@ jobs:
           -DCMAKE_C_COMPILER=cl.exe ^
           -DCMAKE_BUILD_TYPE=Release ^
           -DWITH_JPEG8=ON ^
+          -DENABLE_SHARED=OFF ^
+          -DREQUIRE_SIMD=ON ^
           -DCMAKE_INSTALL_PREFIX=%CD:\=/%/../install ^
           -G Ninja
         ninja install
