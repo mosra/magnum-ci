@@ -58,9 +58,11 @@ validation and optimization.
 
 -   **Build file:** [`build.yml`](https://github.com/mosra/magnum-ci/blob/spirv-tools/.github/workflows/build.yml)
 -   **All builds**: [GitHub Actions](https://github.com/mosra/magnum-ci/actions?query=workflow%3ASPIRV-Tools)
--   **Latest known-good build**: [2020.4](https://github.com/mosra/magnum-ci/actions/runs/345798119) (2020-11-04)
+-   **Latest known-good build**: [2020.4](https://github.com/mosra/magnum-ci/actions/runs/454588347) (2020-12-31)
     -   Windows MSVC2019
     -   Windows MSVC2019 Debug
+    -   Windows MSVC2017
+    -   Windows MSVC2017 Debug
     -   Ubuntu 16.04
     -   Ubuntu 16.04 GCC 4.8
 
