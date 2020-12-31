@@ -67,3 +67,41 @@ jobs:
       with:
         name: assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os }}
         path: install
+
+  windows-mingw:
+    name: windows-mingw
+    runs-on: windows-2019
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@v3
+    - name: Set up MinGW environment
+      uses: msys2/setup-msys2@v2
+    - name: Clone Assimp
+      uses: actions/checkout@v2
+      with:
+        repository: assimp/assimp
+        ref: v${{ env.ASSIMP_VERSION }}
+        path: assimp
+    - name: Build & install
+      shell: cmd
+      # Build an embedded zlib because otherwise it finds it somewhere on the
+      # system, which is undesirable
+      run: |
+        mkdir build && cd build
+        cmake ../assimp ^
+          -DCMAKE_C_COMPILER=gcc.exe ^
+          -DCMAKE_CXX_COMPILER=g++.exe ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DASSIMP_BUILD_ASSIMP_TOOLS=OFF ^
+          -DASSIMP_BUILD_TESTS=OFF ^
+          -DASSIMP_BUILD_ZLIB=ON ^
+          -DASSIMP_NO_EXPORT=ON ^
+          -DBUILD_SHARED_LIBS=OFF ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/../install ^
+          -G Ninja
+        ninja install
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: assimp-${{ env.ASSIMP_VERSION }}-windows-mingw
+        path: install
