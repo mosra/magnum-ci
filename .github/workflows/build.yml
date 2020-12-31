@@ -201,6 +201,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        # Can't (easily) build on MSVC 2017 because windows-2016 has CMake 3.12
+        # and the damn SwiftShader codebase requires 3.13 for some stupid
+        # reason.
         os: [windows-2019]
     steps:
     - name: Install Ninja
