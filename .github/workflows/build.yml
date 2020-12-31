@@ -12,20 +12,28 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2019]
+        os: [windows-2019, windows-2016]
     steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@v3
+    - name: Set up Visual Studio environment
+      uses: seanmiddleditch/gha-setup-vsdevenv@v3
     - name: Download sources
       run: |
         Invoke-WebRequest https://download.savannah.gnu.org/releases/freetype/freetype-${{ env.FREETYPE_VERSION }}.tar.gz -O freetype.tar.gz
         tar xzvf freetype.tar.gz
-    - name: Generate
+    - name: Build & install
+      shell: cmd
+      # -S and -B is only since CMake 3.13, Windows 2016 uses 3.12 even though
+      # the README says 3.19.1
       run: |
-        cd freetype-${{ env.FREETYPE_VERSION }}
-        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
-    - name: Build & Package
-      run: |
-        cd freetype-${{ env.FREETYPE_VERSION }}
-        cmake --build build --config Release --target install
+        mkdir build && cd build
+        cmake ../freetype-${{ env.FREETYPE_VERSION }} ^
+          -DCMAKE_C_COMPILER=cl.exe ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install ^
+          -G Ninja
+        ninja install
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
       with:
