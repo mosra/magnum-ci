@@ -39,6 +39,9 @@ jobs:
           -DCMAKE_INSTALL_PREFIX=%CD:\=/%/../install ^
           -G Ninja
         ninja install
+        cd ../install
+        del bin share /s /q
+        rmdir bin share /s /q
       shell: cmd
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
