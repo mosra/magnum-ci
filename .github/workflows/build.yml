@@ -1,0 +1,69 @@
+name: Assimp
+
+on: [push, pull_request]
+
+env:
+  ASSIMP_VERSION: 5.0.1
+
+jobs:
+  windows:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-2019, windows-2016]
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@v3
+    - name: Set up Visual Studio environment
+      uses: seanmiddleditch/gha-setup-vsdevenv@v3
+    - name: Clone Assimp
+      uses: actions/checkout@v2
+      with:
+        repository: assimp/assimp
+        ref: v${{ env.ASSIMP_VERSION }}
+        path: assimp
+    - name: Build & install Debug
+      shell: cmd
+      # -S and -B is only since CMake 3.13, Windows 2016 uses 3.12 even though
+      # the README says 3.19.1
+      run: |
+        mkdir build-debug && cd build-debug
+        cmake ../assimp ^
+          -DCMAKE_C_COMPILER=cl.exe ^
+          -DCMAKE_CXX_COMPILER=cl.exe ^
+          -DCMAKE_BUILD_TYPE=Debug ^
+          -DASSIMP_BUILD_ASSIMP_TOOLS=OFF ^
+          -DASSIMP_BUILD_TESTS=OFF ^
+          -DASSIMP_NO_EXPORT=ON ^
+          -DBUILD_SHARED_LIBS=OFF ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/../install-debug ^
+          -G Ninja
+        ninja install
+    - name: Build & install Release
+      shell: cmd
+      # -S and -B is only since CMake 3.13, Windows 2016 uses 3.12 even though
+      # the README says 3.19.1
+      run: |
+        mkdir build && cd build
+        cmake ../assimp ^
+          -DCMAKE_C_COMPILER=cl.exe ^
+          -DCMAKE_CXX_COMPILER=cl.exe ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DASSIMP_BUILD_ASSIMP_TOOLS=OFF ^
+          -DASSIMP_BUILD_TESTS=OFF ^
+          -DASSIMP_NO_EXPORT=ON ^
+          -DBUILD_SHARED_LIBS=OFF ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/../install ^
+          -G Ninja
+        ninja install
+    - name: Upload Debug artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os }}-debug
+        path: install-debug
+    - name: Upload Release artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os }}
+        path: install
