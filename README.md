@@ -33,9 +33,11 @@ compiler.
 
 -   **Build file:** [`build.yml`](https://github.com/mosra/magnum-ci/blob/glslang/.github/workflows/build.yml)
 -   **All builds**: [GitHub Actions](https://github.com/mosra/magnum-ci/actions?query=workflow%3AGlslang)
--   **Latest known-good build**: [8.13.3743](https://github.com/mosra/magnum-ci/actions/runs/335427690) (2020-10-29)
+-   **Latest known-good build**: [8.13.3743](https://github.com/mosra/magnum-ci/actions/runs/454616450) (2020-12-31)
     -   Windows MSVC2019
     -   Windows MSVC2019 Debug
+    -   Windows MSVC2017
+    -   Windows MSVC2017 Debug
     -   Ubuntu 16.04
     -   Ubuntu 16.04 GCC 4.8
 
