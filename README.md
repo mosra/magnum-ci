@@ -76,7 +76,8 @@ and Vulkan.
 -   **All builds**: [GitHub Actions](https://github.com/mosra/magnum-ci/actions?query=workflow%3ASwiftShader)
 -   **Latest known-good build**: [r5464.a6940c8e6e](https://github.com/mosra/magnum-ci/actions/runs/251407425), [upstream commit](https://github.com/google/swiftshader/commit/a6940c8e6e) (2020-09-09)
     -   using LLVM 7 (not 10 yet, although it's available)
-    -   Windows MSVC2019
+    -   Windows MSVC2019 (MSVC2017 build not done because CMake 3.13
+        required by SwiftShader isn't available on the image)
     -   macOS 10.15
     -   Ubuntu 16.04 (only OpenGL ES, Vulkan doesn't build on GCC 5)
     -   Ubuntu 18.04
