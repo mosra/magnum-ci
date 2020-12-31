@@ -22,8 +22,9 @@ https://www.freetype.org — Font rendering library.
 
 -   **Build file:** [`build.yml`](https://github.com/mosra/magnum-ci/blob/freetype/.github/workflows/build.yml)
 -   **All builds**: [GitHub Actions](https://github.com/mosra/magnum-ci/actions?query=workflow%3AFreeType)
--   **Latest known-good build**: [2.10.4](https://github.com/mosra/magnum-ci/actions/runs/368641890) (2020-11-17)
+-   **Latest known-good build**: [2.10.4](https://github.com/mosra/magnum-ci/actions/runs/454639188) (2020-12-31)
     -   Windows MSVC2019
+    -   Windows MSVC2017
 
 Glslang
 =======
