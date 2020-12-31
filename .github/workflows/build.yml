@@ -1,0 +1,43 @@
+name: libjpeg-turbo
+
+on: [push, pull_request]
+
+env:
+  JPEG_VERSION: 2.0.6
+
+jobs:
+  windows:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-2019]
+    steps:
+    - name: Set up NASM
+      uses: ilammy/setup-nasm@v1
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@v3
+    - name: Set up Visual Studio environment
+      uses: seanmiddleditch/gha-setup-vsdevenv@v3
+    - name: Clone jpeg-turbo
+      uses: actions/checkout@v2
+      with:
+        repository: libjpeg-turbo/libjpeg-turbo
+        ref: ${{ env.JPEG_VERSION }}
+        path: jpeg-turbo
+    - name: Build & install
+      run: |
+        cmake ^
+          -G Ninja ^
+          -DCMAKE_C_COMPILER=cl.exe ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DWITH_JPEG8=ON ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
+          -S jpeg-turbo -B build
+        ninja -C build install
+      shell: cmd
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: jpeg-turbo-${{ env.JPEG_VERSION }}-${{ matrix.os }}
+        path: install
