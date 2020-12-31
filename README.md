@@ -39,6 +39,17 @@ compiler.
     -   Ubuntu 16.04
     -   Ubuntu 16.04 GCC 4.8
 
+libjpeg-turbo
+=============
+
+https://github.com/libjpeg-turbo/libjpeg-turbo — libjpeg with SIMD acceleration
+
+-   **Build file:** [`build.yml`](https://github.com/mosra/magnum-ci/blob/libjpeg-turbo/.github/workflows/build.yml)
+-   **All builds**: [GitHub Actions](https://github.com/mosra/magnum-ci/actions?query=workflow%3Alibjpeg-turbo)
+-   **Latest known-good build**: [2.0.6](https://github.com/mosra/magnum-ci/actions/runs/454565942) (2020-12-31)
+    -   Windows MSVC2019
+    -   Windows MSVC2017
+
 SPIRV-Tools
 ===========
 
