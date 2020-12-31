@@ -25,7 +25,7 @@ jobs:
       run: sudo apt-get install g++-4.8
       if: ${{ matrix.env.GCC == '4.8' }}
     - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@v1
+      uses: seanmiddleditch/gha-setup-ninja@v3
     - name: Clone glslang
       uses: actions/checkout@v2
       with:
@@ -66,9 +66,9 @@ jobs:
         os: [windows-2019]
     steps:
     - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@v1
+      uses: seanmiddleditch/gha-setup-ninja@v3
     - name: Set up Visual Studio environment
-      uses: seanmiddleditch/gha-setup-vsdevenv@v1
+      uses: seanmiddleditch/gha-setup-vsdevenv@v3
     - name: Clone glslang
       uses: actions/checkout@v2
       with:
