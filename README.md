@@ -22,11 +22,12 @@ https://www.assimp.org — Asset import library.
 
 -   **Build file:** [`build.yml`](https://github.com/mosra/magnum-ci/blob/assimp/.github/workflows/build.yml)
 -   **All builds**: [GitHub Actions](https://github.com/mosra/magnum-ci/actions?query=workflow%3AAssimp)
--   **Latest known-good build**: [5.0.1](https://github.com/mosra/magnum-ci/actions/runs/454668343) (2020-12-31)
+-   **Latest known-good build**: [5.0.1](https://github.com/mosra/magnum-ci/actions/runs/454918457) (2020-12-31)
     -   Windows MSVC2019
     -   Windows MSVC2019 Debug
     -   Windows MSVC2017
     -   Windows MSVC2017 Debug
+    -   Windows MinGW
 
 FreeType
 ========
@@ -62,9 +63,12 @@ https://github.com/libjpeg-turbo/libjpeg-turbo — libjpeg with SIMD acceleratio
 
 -   **Build file:** [`build.yml`](https://github.com/mosra/magnum-ci/blob/libjpeg-turbo/.github/workflows/build.yml)
 -   **All builds**: [GitHub Actions](https://github.com/mosra/magnum-ci/actions?query=workflow%3Alibjpeg-turbo)
--   **Latest known-good build**: [2.0.6](https://github.com/mosra/magnum-ci/actions/runs/454565942) (2020-12-31)
+-   **Latest known-good build**: [2.0.6](https://github.com/mosra/magnum-ci/actions/runs/473943089) (2021-01-09)
     -   Windows MSVC2019
     -   Windows MSVC2017
+    -   No MinGW build due to ABI issues
+        (`undefined reference to '__imp___acrt_iob_func'`) when used on
+        AppVeyor with GCC 7.2
 
 SPIRV-Tools
 ===========
