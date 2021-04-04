@@ -1,0 +1,132 @@
+name: OpenEXR
+
+on: [push, pull_request]
+
+env:
+  ZLIB_VERSION: 1.2.11
+  OPENEXR_VERSION: 2.5.5
+
+jobs:
+  windows:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-2019, windows-2016]
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@v3
+    - name: Set up Visual Studio environment
+      uses: seanmiddleditch/gha-setup-vsdevenv@v3
+    - name: Clone OpenEXR
+      uses: actions/checkout@v2
+      with:
+        repository: AcademySoftwareFoundation/openexr
+        ref: v${{ env.OPENEXR_VERSION }}
+        path: openexr
+    - name: Download prebuilt zlib
+      # Built on the `zlib` branch but hosted manually to avoid having to mess
+      # with access permissions
+      run: |
+        Invoke-WebRequest https://ci.magnum.graphics/zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os }}.zip -O zlib.zip
+        7z x zlib.zip -o${{ github.workspace }}/deps
+    - name: Build & install Debug
+      shell: cmd
+      # -S and -B is only since CMake 3.13, Windows 2016 uses 3.12 even though
+      # the README says 3.19.1. CMake is able to find `zlibstatic` only since
+      # 3.15, supply the location manually for Windows 2016:
+      # https://github.com/Kitware/CMake/commit/4ff3ab2ac9d0c81c927d25117e5a14cb8ebbbb86
+      run: |
+        mkdir build-debug && cd build-debug
+        cmake ../openexr ^
+          -DCMAKE_C_COMPILER=cl.exe ^
+          -DCMAKE_CXX_COMPILER=cl.exe ^
+          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/deps ^
+          -DCMAKE_BUILD_TYPE=Debug ^
+          -DPYILMBASE_ENABLE=OFF ^
+          -DBUILD_SHARED_LIBS=OFF ^
+          -DBUILD_TESTING=OFF ^
+          -DINSTALL_OPENEXR_DOCS=OFF ^
+          -DINSTALL_OPENEXR_EXAMPLES=OFF ^
+          -DOPENEXR_BUILD_UTILS=OFF ^
+          -DOPENEXR_CXX_STANDARD=11 ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/../install-debug ^
+          -DZLIB_LIBRARY=${{ github.workspace }}/deps/lib/zlibstatic.lib ^
+          -G Ninja
+        ninja install
+    - name: Build & install Release
+      shell: cmd
+      # Same comment as above.
+      run: |
+        mkdir build && cd build
+        cmake ../openexr ^
+          -DCMAKE_C_COMPILER=cl.exe ^
+          -DCMAKE_CXX_COMPILER=cl.exe ^
+          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/deps ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DPYILMBASE_ENABLE=OFF ^
+          -DBUILD_SHARED_LIBS=OFF ^
+          -DBUILD_TESTING=OFF ^
+          -DINSTALL_OPENEXR_DOCS=OFF ^
+          -DINSTALL_OPENEXR_EXAMPLES=OFF ^
+          -DOPENEXR_BUILD_UTILS=OFF ^
+          -DOPENEXR_CXX_STANDARD=11 ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/../install ^
+          -DZLIB_LIBRARY=${{ github.workspace }}/deps/lib/zlibstatic.lib ^
+          -G Ninja
+        ninja install
+    - name: Upload Debug artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: openexr-${{ env.OPENEXR_VERSION }}-${{ matrix.os }}-debug
+        path: install-debug
+    - name: Upload Release artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: openexr-${{ env.OPENEXR_VERSION }}-${{ matrix.os }}
+        path: install
+
+  windows-mingw:
+    name: windows-mingw
+    runs-on: windows-2019
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@v3
+    - name: Set up MinGW environment
+      uses: msys2/setup-msys2@v2
+    - name: Clone OpenEXR
+      uses: actions/checkout@v2
+      with:
+        repository: AcademySoftwareFoundation/openexr
+        ref: v${{ env.OPENEXR_VERSION }}
+        path: openexr
+    - name: Download prebuilt zlib
+      # Built on the `zlib` branch but hosted manually to avoid having to mess
+      # with access permissions
+      run: |
+        Invoke-WebRequest https://ci.magnum.graphics/zlib-${{ env.ZLIB_VERSION }}-windows-mingw.zip -O zlib.zip
+        7z x zlib.zip -o${{ github.workspace }}/deps
+    - name: Build & install
+      shell: cmd
+      run: |
+        mkdir build && cd build
+        cmake ../openexr ^
+          -DCMAKE_C_COMPILER=gcc.exe ^
+          -DCMAKE_CXX_COMPILER=g++.exe ^
+          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/deps ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DPYILMBASE_ENABLE=OFF ^
+          -DBUILD_SHARED_LIBS=OFF ^
+          -DBUILD_TESTING=OFF ^
+          -DINSTALL_OPENEXR_DOCS=OFF ^
+          -DINSTALL_OPENEXR_EXAMPLES=OFF ^
+          -DOPENEXR_BUILD_UTILS=OFF ^
+          -DOPENEXR_CXX_STANDARD=11 ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/../install ^
+          -G Ninja
+        ninja install
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: openexr-${{ env.OPENEXR_VERSION }}-windows-mingw
+        path: install
