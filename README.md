@@ -70,6 +70,22 @@ https://github.com/libjpeg-turbo/libjpeg-turbo — libjpeg with SIMD acceleratio
         (`undefined reference to '__imp___acrt_iob_func'`) when used on
         AppVeyor with GCC 7.2
 
+OpenEXR
+=======
+
+https://github.com/AcademySoftwareFoundation/openexr — reference implementation
+of the OpenEXR format
+
+-   **Build file:** [`build.yml`](https://github.com/mosra/magnum-ci/blob/openexr/.github/workflows/build.yml)
+-   **All builds**: [GitHub Actions](https://github.com/mosra/magnum-ci/actions?query=workflow%3Aopenexr)
+-   **Depends on**: [zlib](#zlib)
+-   **Latest known-good build**: [2.5.5](https://github.com/mosra/magnum-ci/actions/runs/716506936) (2021-04-04)
+    -   Windows MSVC2019
+    -   Windows MSVC2019 Debug
+    -   Windows MSVC2017
+    -   Windows MSVC2017 Debug
+    -   Windows MinGW
+
 SPIRV-Tools
 ===========
 
@@ -115,3 +131,15 @@ it's too much).
 -   **All builds**: [GitHub Actions](https://github.com/mosra/magnum-ci/actions?query=workflow%3A"Vulkan+Loader")
 -   **Latest known-good build**: [1.2.153](https://github.com/mosra/magnum-ci/actions/runs/246455131) (2020-09-09)
     -   macOS 10.15
+
+zlib
+====
+
+https://github.com/madler/zlib — data compression library
+
+-   **Build file:** [`build.yml`](https://github.com/mosra/magnum-ci/blob/openexr/.github/workflows/build.yml)
+-   **All builds**: [GitHub Actions](https://github.com/mosra/magnum-ci/actions?query=workflow%3Aopenexr)
+-   **Latest known-good build**: [1.2.11](https://github.com/mosra/magnum-ci/actions/runs/716471861) (2021-04-04)
+    -   Windows MSVC2019
+    -   Windows MSVC2017
+    -   Windows MinGW
