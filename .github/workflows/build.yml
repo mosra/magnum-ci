@@ -1,0 +1,84 @@
+name: zlib
+
+on: [push, pull_request]
+
+env:
+  ZLIB_VERSION: 1.2.11
+
+jobs:
+  windows:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-2019, windows-2016]
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@v3
+    - name: Set up Visual Studio environment
+      uses: seanmiddleditch/gha-setup-vsdevenv@v3
+    - name: Clone zlib
+      uses: actions/checkout@v2
+      with:
+        repository: madler/zlib
+        ref: v${{ env.ZLIB_VERSION }}
+        path: zlib
+    - name: Build & install
+      shell: cmd
+      # -S and -B is only since CMake 3.13, Windows 2016 uses 3.12 even though
+      # the README says 3.19.1
+      run: |
+        mkdir build && cd build
+        cmake ../zlib ^
+          -DCMAKE_C_COMPILER=cl.exe ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DSKIP_INSTALL_FILES=ON ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/../install ^
+          -G Ninja
+        ninja install
+    - name: Remove shared libraries
+      shell: cmd
+      run: |
+        del install\bin\zlib.dll
+        del install\lib\zlib.lib
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os }}
+        path: install
+
+  windows-mingw:
+    name: windows-mingw
+    runs-on: windows-2019
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@v3
+    - name: Set up MinGW environment
+      uses: msys2/setup-msys2@v2
+    - name: Clone zlib
+      uses: actions/checkout@v2
+      with:
+        repository: madler/zlib
+        ref: v${{ env.ZLIB_VERSION }}
+        path: zlib
+    - name: Build & install
+      shell: cmd
+      run: |
+        mkdir build && cd build
+        cmake ../zlib ^
+          -DCMAKE_C_COMPILER=gcc.exe ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DSKIP_INSTALL_FILES=ON ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/../install ^
+          -G Ninja
+        ninja install
+    - name: Remove shared libraries
+      shell: cmd
+      run: |
+        del install\bin\libzlib.dll
+        del install\lib\libzlib.dll.a
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: zlib-${{ env.ZLIB_VERSION }}-windows-mingw
+        path: install
