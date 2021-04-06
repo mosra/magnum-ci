@@ -130,3 +130,50 @@ jobs:
       with:
         name: openexr-${{ env.OPENEXR_VERSION }}-windows-mingw
         path: install
+
+  ubuntu:
+    name: ${{ matrix.os }}-gcc${{ matrix.env.GCC }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+        - os: ubuntu-16.04
+          env:
+            GCC: 4.8
+    steps:
+    - name: Install GCC 4.8
+      run: sudo apt-get install g++-4.8
+      if: ${{ matrix.env.GCC == '4.8' }}
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@v3
+    - name: Clone OpenEXR
+      uses: actions/checkout@v2
+      with:
+        repository: AcademySoftwareFoundation/openexr
+        ref: v${{ env.OPENEXR_VERSION }}
+        path: openexr
+    - name: Build & install
+      run: |
+        mkdir build && cd build
+        cmake ../openexr \
+          -DCMAKE_C_COMPILER=gcc-${{ matrix.env.GCC }} \
+          -DCMAKE_CXX_COMPILER=g++-${{ matrix.env.GCC }} \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DPYILMBASE_ENABLE=OFF \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DBUILD_TESTING=OFF \
+          -DINSTALL_OPENEXR_DOCS=OFF \
+          -DINSTALL_OPENEXR_EXAMPLES=OFF \
+          -DOPENEXR_BUILD_UTILS=OFF \
+          -DOPENEXR_CXX_STANDARD=11 \
+          -DILMBASE_INSTALL_PKG_CONFIG=OFF \
+          -DOPENEXR_INSTALL_PKG_CONFIG=OFF \
+          -DPYILMBASE_INSTALL_PKG_CONFIG=OFF \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
+          -G Ninja
+        ninja install
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: openexr-${{ env.OPENEXR_VERSION }}-${{ matrix.os }}-gcc${{ matrix.env.GCC }}
+        path: install
