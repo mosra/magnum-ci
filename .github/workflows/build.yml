@@ -140,6 +140,9 @@ jobs:
         - os: ubuntu-16.04
           env:
             GCC: 4.8
+        - os: ubuntu-16.04
+          env:
+            GCC: 5
     steps:
     - name: Install GCC 4.8
       run: sudo apt-get install g++-4.8
