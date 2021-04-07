@@ -79,12 +79,15 @@ of the OpenEXR format
 -   **Build file:** [`build.yml`](https://github.com/mosra/magnum-ci/blob/openexr/.github/workflows/build.yml)
 -   **All builds**: [GitHub Actions](https://github.com/mosra/magnum-ci/actions?query=workflow%3Aopenexr)
 -   **Depends on**: [zlib](#zlib)
--   **Latest known-good build**: [2.5.5](https://github.com/mosra/magnum-ci/actions/runs/716506936) (2021-04-04)
+-   **Latest known-good build**: [2.5.5](https://github.com/mosra/magnum-ci/actions/runs/726022297) (2021-04-07)
     -   Windows MSVC2019
     -   Windows MSVC2019 Debug
     -   Windows MSVC2017
     -   Windows MSVC2017 Debug
     -   Windows MinGW
+    -   Ubuntu 16.04 (there's `libopenexr-dev` 2.2 in the repos, but it leaks
+        like crazy, so this build is needed)
+    -   Ubuntu 16.04 GCC 4.8
 
 SPIRV-Tools
 ===========
