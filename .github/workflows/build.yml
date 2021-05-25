@@ -38,7 +38,24 @@ jobs:
         SWIFTSHADER_VERSION="r$(git -C swiftshader rev-list --count HEAD).$(git -C swiftshader rev-parse --short=10 HEAD)"
         echo "version: $SWIFTSHADER_VERSION"
         echo "SWIFTSHADER_VERSION=$SWIFTSHADER_VERSION" >> $GITHUB_ENV
-    - name: Configure
+    - name: Build & install Debug
+      run: |
+        cmake \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DSWIFTSHADER_BUILD_GLES_CM=OFF \
+          -DSWIFTSHADER_BUILD_GLESv2=ON \
+          -DSWIFTSHADER_BUILD_VULKAN=OFF \
+          -DSWIFTSHADER_BUILD_PVR=OFF \
+          -DSWIFTSHADER_BUILD_TESTS=OFF \
+          -DSWIFTSHADER_WARNINGS_AS_ERRORS=OFF \
+          -S swiftshader -B build-debug
+        ninja -C build-debug
+        install -dm755 install-debug/lib
+        install -m755 -t install-debug/lib \
+          build-debug/libEGL.so \
+          build-debug/libGLESv2.so
+    - name: Build & install Release
       run: |
         cmake \
           -G Ninja \
@@ -50,16 +67,17 @@ jobs:
           -DSWIFTSHADER_BUILD_TESTS=OFF \
           -DSWIFTSHADER_WARNINGS_AS_ERRORS=OFF \
           -S swiftshader -B build
-    - name: Build
-      run: |
         ninja -C build
-    - name: Install
-      run: |
         install -dm755 install/lib
         install -m755 -t install/lib \
           build/libEGL.so \
           build/libGLESv2.so
-    - name: Upload artifacts
+    - name: Upload Debug artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: swiftshader-gles-${{ env.SWIFTSHADER_VERSION }}-${{ matrix.os }}-debug
+        path: install-debug
+    - name: Upload Release artifacts
       uses: actions/upload-artifact@v1
       with:
         name: swiftshader-gles-${{ env.SWIFTSHADER_VERSION }}-${{ matrix.os }}
