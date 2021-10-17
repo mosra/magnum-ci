@@ -9,7 +9,7 @@ env:
 jobs:
   windows:
     name: ${{ matrix.target }}
-    runs-on: windows-latest
+    runs-on: windows-2019
     strategy:
       matrix:
         target: ["windows", "windows-uwp"]
@@ -31,7 +31,7 @@ jobs:
       run: |
         Invoke-WebRequest https://storage.googleapis.com/chrome-infra/depot_tools.zip -O depot_tools.zip
         7z x depot_tools.zip -o${{ github.workspace }}/depot_tools
-        echo "::add-path::${{ github.workspace }}\depot_tools"
+        echo "${{ github.workspace }}\depot_tools" | Out-File -FilePath $env:GITHUB_PATH
     - name: Configure
       run: |
         mkdir angle\out
@@ -86,7 +86,7 @@ jobs:
       # https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#adding-a-system-path
       run: |
         git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
-        echo "::add-path::${{ github.workspace }}/depot_tools"
+        echo "${{ github.workspace }}/depot_tools" >> $GITHUB_PATH
     - name: Configure
       run: |
         mkdir angle/out
@@ -138,7 +138,7 @@ jobs:
       # https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#adding-a-system-path
       run: |
         git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
-        echo "::add-path::${{ github.workspace }}/depot_tools"
+        echo "${{ github.workspace }}/depot_tools" >> $GITHUB_PATH
     - name: Configure
       run: |
         mkdir angle/out
