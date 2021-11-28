@@ -3,7 +3,7 @@ name: Assimp
 on: [push, pull_request]
 
 env:
-  ASSIMP_VERSION: 5.0.1
+  ASSIMP_VERSION: 5.1.2
 
 jobs:
   windows:
