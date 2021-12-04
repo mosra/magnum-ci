@@ -120,6 +120,7 @@ jobs:
           -DSWIFTSHADER_BUILD_PVR=OFF \
           -DSWIFTSHADER_BUILD_TESTS=OFF \
           -DSWIFTSHADER_WARNINGS_AS_ERRORS=OFF \
+          -DSPIRV_WERROR=OFF \
           -S swiftshader -B build
     - name: Build
       run: |
@@ -177,6 +178,7 @@ jobs:
           -DSWIFTSHADER_BUILD_PVR=OFF \
           -DSWIFTSHADER_BUILD_TESTS=OFF \
           -DSWIFTSHADER_WARNINGS_AS_ERRORS=OFF \
+          -DSPIRV_WERROR=OFF \
           -S swiftshader -B build
     - name: Build
       run: |
@@ -257,6 +259,7 @@ jobs:
           -DSWIFTSHADER_BUILD_PVR=OFF `
           -DSWIFTSHADER_BUILD_TESTS=OFF `
           -DSWIFTSHADER_WARNINGS_AS_ERRORS=OFF `
+          -DSPIRV_WERROR=OFF `
           -S swiftshader -B build
     - name: Build
       run: |
