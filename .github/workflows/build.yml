@@ -54,9 +54,18 @@ jobs:
           -S swiftshader -B build-debug
         ninja -C build-debug
         install -dm755 install-debug/lib
+        install -dm755 install-debug/include
+        install -dm755 install-debug/include/EGL
+        install -dm755 install-debug/include/KHR
         install -m755 -t install-debug/lib \
           build-debug/libEGL.so \
           build-debug/libGLESv2.so
+        install -m644 -t install-debug/include/EGL \
+          swiftshader/include/EGL/egl.h \
+          swiftshader/include/EGL/eglext.h \
+          swiftshader/include/EGL/eglplatform.h
+        install -m644 -t install-debug/include/KHR \
+          swiftshader/include/KHR/khrplatform.h
     - name: Build & install Release
       run: |
         cmake \
@@ -71,9 +80,18 @@ jobs:
           -S swiftshader -B build
         ninja -C build
         install -dm755 install/lib
+        install -dm755 install/include
+        install -dm755 install/include/EGL
+        install -dm755 install/include/KHR
         install -m755 -t install/lib \
           build/libEGL.so \
           build/libGLESv2.so
+        install -m644 -t install/include/EGL \
+          swiftshader/include/EGL/egl.h \
+          swiftshader/include/EGL/eglext.h \
+          swiftshader/include/EGL/eglplatform.h
+        install -m644 -t install/include/KHR \
+          swiftshader/include/KHR/khrplatform.h
     - name: Upload Debug artifacts
       uses: actions/upload-artifact@v1
       with:
@@ -188,6 +206,9 @@ jobs:
     - name: Install
       run: |
         install -dm755 install-gles/lib
+        install -dm755 install-gles/include
+        install -dm755 install-gles/include/EGL
+        install -dm755 install-gles/include/KHR
         install -dm755 install-vulkan/lib
 
         # There's no install -t on macOS
@@ -195,6 +216,14 @@ jobs:
           build/libEGL.dylib \
           build/libGLESv2.dylib \
           install-gles/lib
+        install -m644 \
+          swiftshader/include/EGL/egl.h \
+          swiftshader/include/EGL/eglext.h \
+          swiftshader/include/EGL/eglplatform.h \
+          install-gles/include/EGL
+        install -m644 \
+          swiftshader/include/KHR/khrplatform.h \
+          install-gles/include/KHR
         install -m755 \
           build/libvk_swiftshader.dylib \
           install-vulkan/lib
@@ -270,6 +299,10 @@ jobs:
       run: |
         mkdir install-gles\bin
         mkdir install-gles\lib
+        mkdir install-gles\include
+        mkdir install-gles\include\EGL
+        mkdir install-gles\include\KHR
+
         mkdir install-vulkan\bin
         mkdir install-vulkan\lib
         mkdir install-vulkan\share\vulkan\icd.d
@@ -278,6 +311,11 @@ jobs:
         copy build\src\OpenGL\libEGL\libEGL.lib install-gles\lib\
         copy build\libGLESv2.dll install-gles\bin\
         copy build\src\OpenGL\libGLESv2\libGLESv2.lib install-gles\lib\
+        copy swiftshader\include\EGL\egl.h install-gles\include\EGL\
+        copy swiftshader\include\EGL\eglext.h install-gles\include\EGL\
+        copy swiftshader\include\EGL\eglplatform.h install-gles\include\EGL\
+        copy swiftshader\include\KHR\khrplatform.h install-gles\include\KHR\
+
         copy build\vk_swiftshader.dll install-vulkan\bin\
         copy build\src\Vulkan\vk_swiftshader.lib install-vulkan\lib\
 
