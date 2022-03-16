@@ -1,0 +1,55 @@
+name: SDL
+
+on: [push, pull_request]
+
+env:
+  SDL_VERSION: 2.0.20
+
+jobs:
+  ubuntu:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-18.04]
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@v3
+    - name: Clone SDL
+      uses: actions/checkout@v3
+      with:
+        repository: libsdl-org/SDL
+        path: sdl
+        ref: release-${{ env.SDL_VERSION }}
+    - name: Install OpenGL
+      run: |
+        sudo apt install -y libgl1-mesa-dev
+    - name: Build & install
+      run: |
+        cmake \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -DSDL_ATOMIC=OFF \
+          -DSDL_CPUINFO=OFF \
+          -DSDL_FILE=OFF \
+          -DSDL_FILESYSTEM=OFF \
+          -DSDL_HAPTIC=OFF \
+          -DSDL_LOCALE=OFF \
+          -DSDL_POWER=OFF \
+          -DSDL_RENDER=OFF \
+          -DSDL_SENSOR=OFF \
+          -DSDL_THREADS=OFF \
+          -DSDL_TIMERS=OFF \
+          -DSDL_SHARED=OFF \
+          -G Ninja -S sdl -B build
+        ninja -C build install/strip
+    - name: Remove sdl2-config binary, M4 and pkgconfig cruft
+      run: |
+        rm -r install/bin
+        rm -r install/lib/pkgconfig
+        rm -r install/share
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: sdl-${{ env.SDL_VERSION }}-${{ matrix.os }}
+        path: install
