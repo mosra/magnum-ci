@@ -39,7 +39,6 @@ jobs:
           -DSDL_RENDER=OFF \
           -DSDL_SENSOR=OFF \
           -DSDL_THREADS=OFF \
-          -DSDL_TIMERS=OFF \
           -DSDL_SHARED=OFF \
           -G Ninja -S sdl -B build
         ninja -C build install/strip
