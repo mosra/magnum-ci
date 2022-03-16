@@ -2,6 +2,9 @@ name: Magnum Tools
 
 on: [push, pull_request]
 
+env:
+  SDL_VERSION: 2.0.20
+
 jobs:
   ubuntu:
     name: ${{ matrix.os }}
@@ -40,9 +43,14 @@ jobs:
         path: magnum-extras
         # Needed for tags :(
         fetch-depth: 0
-    - name: Install OpenGL and Vulkan
+    - name: Install OpenGL and Vulkan, other tools
       run: |
-        sudo apt install -y libgl1-mesa-dev libvulkan-dev
+        sudo apt install -y libgl1-mesa-dev libvulkan-dev wget unzip
+    - name: Fetch prebuilt SDL
+      run: |
+        mkdir deps && cd deps
+        wget https://ci.magnum.graphics/sdl-${{ env.SDL_VERSION }}-${{ matrix.os }}.zip
+        unzip sdl-${{ env.SDL_VERSION }}-${{ matrix.os }}.zip
     - name: Build & install Corrade
       run: |
         cmake \
@@ -52,7 +60,7 @@ jobs:
           -DCMAKE_INSTALL_RPATH="\\\${ORIGIN}/../lib" \
           -DBUILD_DEPRECATED=OFF \
           -DWITH_TESTSUITE=OFF \
-          -DWITH_INTERCONNECT=OFF \
+          -DWITH_INTERCONNECT=ON \
           -G Ninja -S corrade -B corrade-build
         ninja -C corrade-build install/strip
     - name: Build & install Magnum
@@ -60,23 +68,24 @@ jobs:
         cmake \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -DCMAKE_PREFIX_PATH=$(pwd)/deps \
           `# https://cmake.org/cmake/help/latest/policy/CMP0095.html` \
           -DCMAKE_INSTALL_RPATH="\\\${ORIGIN}/../lib" \
           -DBUILD_DEPRECATED=OFF \
           -DWITH_AUDIO=OFF \
           -DWITH_GL=ON \
-          -DWITH_DEBUGTOOLS=OFF \
+          -DWITH_DEBUGTOOLS=ON \
           -DWITH_MESHTOOLS=ON \
           -DWITH_PRIMITIVES=ON \
-          -DWITH_SCENEGRAPH=OFF \
+          -DWITH_SCENEGRAPH=ON \
           -DWITH_SCENETOOLS=ON \
-          -DWITH_SHADERS=OFF \
+          -DWITH_SHADERS=ON \
           -DWITH_SHADERTOOLS=ON \
-          -DWITH_TEXT=OFF \
-          -DWITH_TEXTURETOOLS=OFF \
+          -DWITH_TEXT=ON \
+          -DWITH_TEXTURETOOLS=ON \
           -DWITH_TRADE=ON \
           -DWITH_VK=ON \
-          -DWITH_SDL2APPLICATION=OFF \
+          -DWITH_SDL2APPLICATION=ON \
           -DWITH_GL_INFO=ON \
           -DWITH_VK_INFO=ON \
           -DWITH_IMAGECONVERTER=ON \
@@ -124,7 +133,7 @@ jobs:
           -DWITH_STBDXTIMAGECONVERTER=ON \
           -DWITH_STBIMAGECONVERTER=ON \
           -DWITH_STBIMAGEIMPORTER=ON \
-          -DWITH_STBTRUETYPEFONT=OFF \
+          -DWITH_STBTRUETYPEFONT=ON \
           -DWITH_STLIMPORTER=OFF \
           -DWITH_TINYGLTFIMPORTER=OFF \
           -G Ninja -S magnum-plugins -B magnum-plugins-build
@@ -134,9 +143,10 @@ jobs:
         cmake \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -DCMAKE_PREFIX_PATH=$(pwd)/deps \
           `# https://cmake.org/cmake/help/latest/policy/CMP0095.html` \
           -DCMAKE_INSTALL_RPATH="\\\${ORIGIN}/../lib" \
-          -DWITH_PLAYER=OFF \
+          -DWITH_PLAYER=ON \
           -G Ninja -S magnum-extras -B magnum-extras-build
         ninja -C magnum-extras-build install/strip
     - name: Remove includes, CMake modules, static libraries and corrade-rc
