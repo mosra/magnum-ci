@@ -1,0 +1,193 @@
+name: Magnum Tools
+
+on: [push, pull_request]
+
+jobs:
+  ubuntu:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-18.04]
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@v3
+    - name: Clone Corrade
+      uses: actions/checkout@v3
+      with:
+        repository: mosra/corrade
+        path: corrade
+        # Needed for tags :(
+        fetch-depth: 0
+    - name: Clone Magnum
+      uses: actions/checkout@v3
+      with:
+        repository: mosra/magnum
+        path: magnum
+        # Needed for tags :(
+        fetch-depth: 0
+    - name: Clone Magnum Plugins
+      uses: actions/checkout@v3
+      with:
+        repository: mosra/magnum-plugins
+        path: magnum-plugins
+        # Needed for tags :(
+        fetch-depth: 0
+    - name: Clone Magnum Extras
+      uses: actions/checkout@v3
+      with:
+        repository: mosra/magnum-extras
+        path: magnum-extras
+        # Needed for tags :(
+        fetch-depth: 0
+    - name: Install OpenGL and Vulkan
+      run: |
+        sudo apt install -y libgl1-mesa-dev libvulkan-dev
+    - name: Build & install Corrade
+      run: |
+        cmake \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          `# https://cmake.org/cmake/help/latest/policy/CMP0095.html` \
+          -DCMAKE_INSTALL_RPATH="\\\${ORIGIN}/../lib" \
+          -DBUILD_DEPRECATED=OFF \
+          -DWITH_TESTSUITE=OFF \
+          -DWITH_INTERCONNECT=OFF \
+          -G Ninja -S corrade -B corrade-build
+        ninja -C corrade-build install/strip
+    - name: Build & install Magnum
+      run: |
+        cmake \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          `# https://cmake.org/cmake/help/latest/policy/CMP0095.html` \
+          -DCMAKE_INSTALL_RPATH="\\\${ORIGIN}/../lib" \
+          -DBUILD_DEPRECATED=OFF \
+          -DWITH_AUDIO=OFF \
+          -DWITH_GL=ON \
+          -DWITH_DEBUGTOOLS=OFF \
+          -DWITH_MESHTOOLS=ON \
+          -DWITH_PRIMITIVES=ON \
+          -DWITH_SCENEGRAPH=OFF \
+          -DWITH_SCENETOOLS=ON \
+          -DWITH_SHADERS=OFF \
+          -DWITH_SHADERTOOLS=ON \
+          -DWITH_TEXT=OFF \
+          -DWITH_TEXTURETOOLS=OFF \
+          -DWITH_TRADE=ON \
+          -DWITH_VK=ON \
+          -DWITH_SDL2APPLICATION=OFF \
+          -DWITH_GL_INFO=ON \
+          -DWITH_VK_INFO=ON \
+          -DWITH_IMAGECONVERTER=ON \
+          -DWITH_SCENECONVERTER=ON \
+          -DWITH_SHADERCONVERTER=ON \
+          -DWITH_ANYIMAGECONVERTER=ON \
+          -DWITH_ANYIMAGEIMPORTER=ON \
+          -DWITH_ANYSCENECONVERTER=ON \
+          -DWITH_ANYSCENEIMPORTER=ON \
+          -DWITH_ANYSHADERCONVERTER=ON \
+          -DWITH_OBJIMPORTER=ON \
+          -DWITH_TGAIMAGECONVERTER=ON \
+          -DWITH_TGAIMPORTER=ON \
+          -G Ninja -S magnum -B magnum-build
+        ninja -C magnum-build install/strip
+    - name: Build & install Magnum Plugins
+      run: |
+        cmake \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          `# https://cmake.org/cmake/help/latest/policy/CMP0095.html` \
+          -DCMAKE_INSTALL_RPATH="\\\${ORIGIN}/../lib" \
+          -DWITH_ASSIMPIMPORTER=OFF \
+          -DWITH_BASISIMAGECONVERTER=OFF \
+          -DWITH_BASISIMPORTER=OFF \
+          -DWITH_CGLTFIMPORTER=ON \
+          -DWITH_DDSIMPORTER=ON \
+          -DWITH_DEVILIMAGEIMPORTER=OFF \
+          -DWITH_GLSLANGSHADERCONVERTER=OFF \
+          -DWITH_ICOIMPORTER=ON \
+          -DWITH_JPEGIMAGECONVERTER=OFF \
+          -DWITH_JPEGIMPORTER=OFF \
+          -DWITH_KTXIMAGECONVERTER=ON \
+          -DWITH_KTXIMPORTER=ON \
+          -DWITH_MESHOPTIMIZERSCENECONVERTER=OFF \
+          -DWITH_MINIEXRIMAGECONVERTER=ON \
+          -DWITH_OPENEXRIMAGECONVERTER=OFF \
+          -DWITH_OPENEXRIMPORTER=OFF \
+          -DWITH_PNGIMAGECONVERTER=OFF \
+          -DWITH_PNGIMPORTER=OFF \
+          -DWITH_PRIMITIVEIMPORTER=ON \
+          -DWITH_SPIRVTOOLSSHADERCONVERTER=OFF \
+          -DWITH_STANFORDIMPORTER=ON \
+          -DWITH_STANFORDSCENECONVERTER=ON \
+          -DWITH_STBDXTIMAGECONVERTER=ON \
+          -DWITH_STBIMAGECONVERTER=ON \
+          -DWITH_STBIMAGEIMPORTER=ON \
+          -DWITH_STBTRUETYPEFONT=OFF \
+          -DWITH_STLIMPORTER=OFF \
+          -DWITH_TINYGLTFIMPORTER=OFF \
+          -G Ninja -S magnum-plugins -B magnum-plugins-build
+        ninja -C magnum-plugins-build install/strip
+    - name: Build & install Magnum Extras
+      run: |
+        cmake \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          `# https://cmake.org/cmake/help/latest/policy/CMP0095.html` \
+          -DCMAKE_INSTALL_RPATH="\\\${ORIGIN}/../lib" \
+          -DWITH_PLAYER=OFF \
+          -G Ninja -S magnum-extras -B magnum-extras-build
+        ninja -C magnum-extras-build install/strip
+    - name: Remove includes, CMake modules, static libraries and corrade-rc
+      run: |
+        # Keep version info tho
+        mv install/include/Corrade/version.h install/versionCorrade.h
+        mv install/include/Magnum/version.h install/
+        mv install/include/Magnum/versionPlugins.h install/
+        mv install/include/Magnum/versionExtras.h install/
+        rm -r install/include
+        mkdir -p install/include/Corrade
+        mv install/versionCorrade.h install/include/Corrade/version.h
+        mkdir -p install/include/Magnum
+        mv install/version*.h install/include/Magnum/
+        rm -r install/share
+        # *.so symlinks are not needed either
+        rm -r install/lib/lib*.so
+        # everything is linked against .2 but the actual content is in .2.4,
+        # drop the symlink
+        for i in $(ls install/lib/lib*.so.2); do
+          rm $i
+          mv $i.4 $i
+        done
+        rm -r install/lib/*.a
+        rm install/bin/corrade-rc
+    - name: Collect version info
+      # the tag name is included only for Corrade, then the others have just N
+      # and a short hash (4 instead of 8 numbers, or at least as much to have
+      # the hash unique)
+      run: |
+        cd corrade
+        VERSION=$(git describe --match "v*" --abbrev=4)
+        echo "CORRADE_VERSION=$VERSION" >> $GITHUB_ENV
+        cd ../magnum
+        VERSION=$(git describe --match "v*" --abbrev=4)
+        echo "MAGNUM_VERSION=${VERSION:9}" >> $GITHUB_ENV
+        cd ../magnum-plugins
+        VERSION=$(git describe --match "v*" --abbrev=4)
+        echo "MAGNUM_PLUGINS_VERSION=${VERSION:9}" >> $GITHUB_ENV
+        cd ../magnum-extras
+        VERSION=$(git describe --match "v*" --abbrev=4)
+        echo "MAGNUM_EXTRAS_VERSION=${VERSION:9}" >> $GITHUB_ENV
+    - name: Compress files because GitHub Actions artifact upload is beyond stupid
+      # https://github.com/actions/upload-artifact#maintaining-file-permissions-and-case-sensitive-files
+      # like, seriously, file permissions lost?! and one HTTP request *per one
+      # fucking file*?!
+      run: |
+        mv install magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ matrix.os }}
+        tar -cf magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ matrix.os }}.tar magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ matrix.os }}
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ matrix.os }}
+        path: magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ matrix.os }}.tar
