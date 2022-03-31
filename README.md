@@ -70,6 +70,18 @@ https://github.com/libjpeg-turbo/libjpeg-turbo — libjpeg with SIMD acceleratio
         (`undefined reference to '__imp___acrt_iob_func'`) when used on
         AppVeyor with GCC 7.2
 
+Magnum Tools
+============
+
+`magnum-imageconverter`, `magnum-sceneconverter`, `magnum-gl-info`,
+`magnum-vk-info`, `magnum-player`, importer and image/scene converter plugins
+and Python 3.8, 3.9, and 3.10 bindings.
+
+-   **Build file:** [`build.yml`](https://github.com/mosra/magnum-ci/blob/magnum-tools/.github/workflows/build.yml)
+-   **All builds**: [GitHub Actions](https://github.com/mosra/magnum-ci/actions?query=workflow%3A"Magnum+Tools")
+-   **Latest known-good build**: [`master`](https://github.com/mosra/magnum-ci/actions/runs/2071552983) (2022-03-31)
+    -   Ubuntu 18.04
+
 OpenEXR
 =======
 
@@ -88,6 +100,16 @@ of the OpenEXR format
     -   Ubuntu 16.04 (there's `libopenexr-dev` 2.2 in the repos, but it leaks
         like crazy, so this build is needed)
     -   Ubuntu 16.04 GCC 4.8
+
+SDL
+===
+
+https://libsdl.org — Cross-platform windowing abstraction.
+
+-   **Build file:** [`build.yml`](https://github.com/mosra/magnum-ci/blob/sdl/.github/workflows/build.yml)
+-   **All builds**: [GitHub Actions](https://github.com/mosra/magnum-ci/actions?query=workflow%3ASDL)
+-   **Latest known-good build**: [2.0.20](https://github.com/mosra/magnum-ci/actions/runs/2070884829) (2022-03-31)
+    -   Ubuntu 18.04
 
 SPIRV-Tools
 ===========
