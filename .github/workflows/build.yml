@@ -40,6 +40,8 @@ jobs:
           -DSDL_SENSOR=OFF \
           -DSDL_THREADS=OFF \
           -DSDL_SHARED=OFF \
+          `# Needed so it can be linked to a *.so for Magnum Python Bindings` \
+          -DSDL_STATIC_PIC=ON \
           -G Ninja -S sdl -B build
         ninja -C build install/strip
     - name: Remove sdl2-config binary, M4 and pkgconfig cruft
