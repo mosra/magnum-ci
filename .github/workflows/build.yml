@@ -4,6 +4,8 @@ on: [push, pull_request]
 
 env:
   SDL_VERSION: 2.0.20
+  PYTHON_VERSION: 10
+  PYBIND_VERSION: 2.9.2
 
 jobs:
   ubuntu:
@@ -43,12 +45,35 @@ jobs:
         path: magnum-extras
         # Needed for tags :(
         fetch-depth: 0
+    - name: Clone Magnum Bindings
+      uses: actions/checkout@v3
+      with:
+        repository: mosra/magnum-bindings
+        path: magnum-bindings
+        # Needed for tags :(
+        fetch-depth: 0
     - name: Install OpenGL and Vulkan, other tools
       run: |
-        sudo apt install -y libgl1-mesa-dev libvulkan-dev wget unzip
+        sudo apt install -y libgl1-mesa-dev libvulkan-dev wget unzip chrpath
+        mkdir -p deps
+    - name: Setup Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.${{ env.PYTHON_VERSION }}'
+    - name: Install Pybind11
+      run: |
+        wget --no-clobber https://github.com/pybind/pybind11/archive/v${{ env.PYBIND_VERSION }}.tar.gz
+        tar -xzf v${{ env.PYBIND_VERSION }}.tar.gz
+        cmake \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/deps \
+          -DPYBIND11_PYTHON_VERSION=3.${{ env.PYTHON_VERSION }} \
+          -DPYBIND11_TEST=OFF \
+          -G Ninja -S pybind11-${{ env.PYBIND_VERSION }} -B pybind-build
+        ninja -C pybind-build install/strip
     - name: Fetch prebuilt SDL
       run: |
-        mkdir deps && cd deps
+        cd deps
         wget https://ci.magnum.graphics/sdl-${{ env.SDL_VERSION }}-${{ matrix.os }}.zip
         unzip sdl-${{ env.SDL_VERSION }}-${{ matrix.os }}.zip
     - name: Build & install Corrade
@@ -149,13 +174,44 @@ jobs:
           -DWITH_PLAYER=ON \
           -G Ninja -S magnum-extras -B magnum-extras-build
         ninja -C magnum-extras-build install/strip
-    - name: Remove includes, CMake modules, static libraries and corrade-rc
+    - name: Build & install Magnum Bindings
+      run: |
+        cmake \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -DCMAKE_PREFIX_PATH=$(pwd)/deps \
+          `# https://cmake.org/cmake/help/latest/policy/CMP0095.html` \
+          `# no install here (setuptools does), so no CMAKE_INSTALL_RPATH,` \
+          `# which also means we don't need to over-escape anything` \
+          -DCMAKE_BUILD_RPATH="\${ORIGIN}/../lib" \
+          -DPYBIND11_PYTHON_VERSION=3.${{ env.PYTHON_VERSION }} \
+          -DWITH_PYTHON=ON \
+          -G Ninja -S magnum-bindings -B magnum-bindings-build
+        # We install just the version header here, the rest is done by setup.py
+        ninja -C magnum-bindings-build install/strip
+        cd magnum-bindings-build/src/python
+        python3 setup.py install --install-lib=python --root="$(pwd)/../../../install"
+    - name: Patch RPATH in nested Magnum Bindings modules
+      run: |
+        # https://stackoverflow.com/a/20333550
+        # Not using patchelf as the expectation is that CMAKE_BUILD_RPATH
+        # above worked and used '$ORIGIN/../lib' for root _corrade and _magnum
+        # *.so files.
+        # TODO CMake implicitly puts the build tree into the RPATH for _corrade
+        # and _magnum, any way to remove that without patching with chrpath?
+        # CMAKE_SKIP_BUILD_RPATH together with CMAKE_BUILD_RPATH doesn't work
+        # as that skips even the explicit one.
+        chrpath -r '$ORIGIN/../../lib' install/python/corrade/*.so
+        chrpath -r '$ORIGIN/../../lib' install/python/magnum/*.so
+        chrpath -r '$ORIGIN/../../../lib' install/python/magnum/platform/*.so
+    - name: Remove includes, CMake modules, static libraries, corrade-rc, Python Egg Info
       run: |
         # Keep version info tho
         mv install/include/Corrade/version.h install/versionCorrade.h
         mv install/include/Magnum/version.h install/
         mv install/include/Magnum/versionPlugins.h install/
         mv install/include/Magnum/versionExtras.h install/
+        mv install/include/Magnum/versionBindings.h install/
         rm -r install/include
         mkdir -p install/include/Corrade
         mv install/versionCorrade.h install/include/Corrade/version.h
@@ -172,6 +228,8 @@ jobs:
         done
         rm -r install/lib/*.a
         rm install/bin/corrade-rc
+        # TODO can this be just not made at all?
+        rm -r install/python/*.egg-info
     - name: Collect version info
       # the tag name is included only for Corrade, then the others have just N
       # and a short hash (4 instead of 8 numbers, or at least as much to have
@@ -189,15 +247,18 @@ jobs:
         cd ../magnum-extras
         VERSION=$(git describe --match "v*" --abbrev=4)
         echo "MAGNUM_EXTRAS_VERSION=${VERSION:9}" >> $GITHUB_ENV
+        cd ../magnum-bindings
+        VERSION=$(git describe --match "v*" --abbrev=4)
+        echo "MAGNUM_BINDINGS_VERSION=${VERSION:9}" >> $GITHUB_ENV
     - name: Compress files because GitHub Actions artifact upload is beyond stupid
       # https://github.com/actions/upload-artifact#maintaining-file-permissions-and-case-sensitive-files
       # like, seriously, file permissions lost?! and one HTTP request *per one
       # fucking file*?!
       run: |
-        mv install magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ matrix.os }}
-        tar -cf magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ matrix.os }}.tar magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ matrix.os }}
+        mv install magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ env.MAGNUM_BINDINGS_VERSION }}-${{ matrix.os }}
+        tar -cf magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ env.MAGNUM_BINDINGS_VERSION }}-${{ matrix.os }}.tar magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ env.MAGNUM_BINDINGS_VERSION }}-${{ matrix.os }}
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ matrix.os }}
-        path: magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ matrix.os }}.tar
+        name: magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ env.MAGNUM_BINDINGS_VERSION }}-${{ matrix.os }}
+        path: magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ env.MAGNUM_BINDINGS_VERSION }}-${{ matrix.os }}.tar
