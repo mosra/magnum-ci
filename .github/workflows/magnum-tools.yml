@@ -3,6 +3,7 @@ name: Magnum Tools
 on: [push, pull_request]
 
 env:
+  MESHOPTIMIZER_VERSION: 0.17
   SDL_VERSION: 2.0.20
   PYBIND_VERSION: 2.9.2
 
@@ -64,6 +65,11 @@ jobs:
         cd deps
         wget https://ci.magnum.graphics/sdl-${{ env.SDL_VERSION }}-${{ matrix.os }}.zip
         unzip sdl-${{ env.SDL_VERSION }}-${{ matrix.os }}.zip
+    - name: Fetch prebuilt meshoptimizer
+      run: |
+        cd deps
+        wget https://ci.magnum.graphics/meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}.zip
+        unzip meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}.zip
     - name: Build & install Corrade
       run: |
         cmake \
@@ -119,6 +125,7 @@ jobs:
         cmake \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -DCMAKE_PREFIX_PATH=$(pwd)/deps \
           `# https://cmake.org/cmake/help/latest/policy/CMP0095.html` \
           -DCMAKE_INSTALL_RPATH="\\\${ORIGIN}/../lib" \
           -DWITH_ASSIMPIMPORTER=OFF \
@@ -133,7 +140,7 @@ jobs:
           -DWITH_JPEGIMPORTER=OFF \
           -DWITH_KTXIMAGECONVERTER=ON \
           -DWITH_KTXIMPORTER=ON \
-          -DWITH_MESHOPTIMIZERSCENECONVERTER=OFF \
+          -DWITH_MESHOPTIMIZERSCENECONVERTER=ON \
           -DWITH_MINIEXRIMAGECONVERTER=ON \
           -DWITH_OPENEXRIMAGECONVERTER=OFF \
           -DWITH_OPENEXRIMPORTER=OFF \
