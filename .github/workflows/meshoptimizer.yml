@@ -1,0 +1,35 @@
+name: MeshOptimizer
+
+on: [push, pull_request]
+
+env:
+  MESHOPTIMIZER_VERSION: 0.17
+
+jobs:
+  ubuntu:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-18.04]
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@v3
+    - name: Clone MeshOptimizer
+      uses: actions/checkout@v2
+      with:
+        repository: zeux/meshoptimizer
+        ref: v${{ env.MESHOPTIMIZER_VERSION }}
+        path: meshoptimizer
+    - name: Build & install
+      run: |
+        cmake \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -G Ninja -S meshoptimizer -B meshoptimizer-build
+        ninja -C meshoptimizer-build install/strip
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}
+        path: install
