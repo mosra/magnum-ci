@@ -169,6 +169,10 @@ jobs:
           -DMAGNUM_WITH_WEBPIMPORTER=OFF \
           -G Ninja -S magnum-plugins -B magnum-plugins-build
         ninja -C magnum-plugins-build install/strip
+        # Copy also the gltf<->glb Python scripts, useful until we have a
+        # proper converter ready
+        install magnum-plugins/src/MagnumPlugins/GltfImporter/Test/glb2gltf.py $(pwd)/install/bin
+        install magnum-plugins/src/MagnumPlugins/GltfImporter/Test/gltf2glb.py $(pwd)/install/bin
     - name: Build & install Magnum Extras
       run: |
         cmake \
