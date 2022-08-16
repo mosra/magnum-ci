@@ -83,9 +83,9 @@ jobs:
           -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
           `# https://cmake.org/cmake/help/latest/policy/CMP0095.html` \
           -DCMAKE_INSTALL_RPATH="\\\${ORIGIN}/../lib" \
-          -DBUILD_DEPRECATED=OFF \
-          -DWITH_TESTSUITE=OFF \
-          -DWITH_INTERCONNECT=ON \
+          -DCORRADE_BUILD_DEPRECATED=OFF \
+          -DCORRADE_WITH_TESTSUITE=OFF \
+          -DCORRADE_WITH_INTERCONNECT=ON \
           -G Ninja -S corrade -B corrade-build
         ninja -C corrade-build install/strip
     - name: Build & install Magnum
@@ -96,34 +96,34 @@ jobs:
           -DCMAKE_PREFIX_PATH=$(pwd)/deps \
           `# https://cmake.org/cmake/help/latest/policy/CMP0095.html` \
           -DCMAKE_INSTALL_RPATH="\\\${ORIGIN}/../lib" \
-          -DBUILD_DEPRECATED=OFF \
-          -DWITH_AUDIO=OFF \
-          -DWITH_GL=ON \
-          -DWITH_DEBUGTOOLS=ON \
-          -DWITH_MESHTOOLS=ON \
-          -DWITH_PRIMITIVES=ON \
-          -DWITH_SCENEGRAPH=ON \
-          -DWITH_SCENETOOLS=ON \
-          -DWITH_SHADERS=ON \
-          -DWITH_SHADERTOOLS=ON \
-          -DWITH_TEXT=ON \
-          -DWITH_TEXTURETOOLS=ON \
-          -DWITH_TRADE=ON \
-          -DWITH_VK=ON \
-          -DWITH_SDL2APPLICATION=ON \
-          -DWITH_GL_INFO=ON \
-          -DWITH_VK_INFO=ON \
-          -DWITH_IMAGECONVERTER=ON \
-          -DWITH_SCENECONVERTER=ON \
-          -DWITH_SHADERCONVERTER=ON \
-          -DWITH_ANYIMAGECONVERTER=ON \
-          -DWITH_ANYIMAGEIMPORTER=ON \
-          -DWITH_ANYSCENECONVERTER=ON \
-          -DWITH_ANYSCENEIMPORTER=ON \
-          -DWITH_ANYSHADERCONVERTER=ON \
-          -DWITH_OBJIMPORTER=ON \
-          -DWITH_TGAIMAGECONVERTER=ON \
-          -DWITH_TGAIMPORTER=ON \
+          -DMAGNUM_BUILD_DEPRECATED=OFF \
+          -DMAGNUM_WITH_AUDIO=OFF \
+          -DMAGNUM_WITH_GL=ON \
+          -DMAGNUM_WITH_DEBUGTOOLS=ON \
+          -DMAGNUM_WITH_MESHTOOLS=ON \
+          -DMAGNUM_WITH_PRIMITIVES=ON \
+          -DMAGNUM_WITH_SCENEGRAPH=ON \
+          -DMAGNUM_WITH_SCENETOOLS=ON \
+          -DMAGNUM_WITH_SHADERS=ON \
+          -DMAGNUM_WITH_SHADERTOOLS=ON \
+          -DMAGNUM_WITH_TEXT=ON \
+          -DMAGNUM_WITH_TEXTURETOOLS=ON \
+          -DMAGNUM_WITH_TRADE=ON \
+          -DMAGNUM_WITH_VK=ON \
+          -DMAGNUM_WITH_SDL2APPLICATION=ON \
+          -DMAGNUM_WITH_GL_INFO=ON \
+          -DMAGNUM_WITH_VK_INFO=ON \
+          -DMAGNUM_WITH_IMAGECONVERTER=ON \
+          -DMAGNUM_WITH_SCENECONVERTER=ON \
+          -DMAGNUM_WITH_SHADERCONVERTER=ON \
+          -DMAGNUM_WITH_ANYIMAGECONVERTER=ON \
+          -DMAGNUM_WITH_ANYIMAGEIMPORTER=ON \
+          -DMAGNUM_WITH_ANYSCENECONVERTER=ON \
+          -DMAGNUM_WITH_ANYSCENEIMPORTER=ON \
+          -DMAGNUM_WITH_ANYSHADERCONVERTER=ON \
+          -DMAGNUM_WITH_OBJIMPORTER=ON \
+          -DMAGNUM_WITH_TGAIMAGECONVERTER=ON \
+          -DMAGNUM_WITH_TGAIMPORTER=ON \
           -G Ninja -S magnum -B magnum-build
         ninja -C magnum-build install/strip
     - name: Build & install Magnum Plugins
@@ -134,35 +134,35 @@ jobs:
           -DCMAKE_PREFIX_PATH=$(pwd)/deps \
           `# https://cmake.org/cmake/help/latest/policy/CMP0095.html` \
           -DCMAKE_INSTALL_RPATH="\\\${ORIGIN}/../lib" \
-          -DWITH_ASSIMPIMPORTER=OFF \
-          -DWITH_BASISIMAGECONVERTER=ON \
-          -DWITH_BASISIMPORTER=ON \
           -DBASIS_UNIVERSAL_DIR=$(pwd)/basis-universal \
-          -DWITH_CGLTFIMPORTER=ON \
-          -DWITH_DDSIMPORTER=ON \
-          -DWITH_DEVILIMAGEIMPORTER=OFF \
-          -DWITH_GLSLANGSHADERCONVERTER=OFF \
-          -DWITH_ICOIMPORTER=ON \
-          -DWITH_JPEGIMAGECONVERTER=OFF \
-          -DWITH_JPEGIMPORTER=OFF \
-          -DWITH_KTXIMAGECONVERTER=ON \
-          -DWITH_KTXIMPORTER=ON \
-          -DWITH_MESHOPTIMIZERSCENECONVERTER=ON \
-          -DWITH_MINIEXRIMAGECONVERTER=ON \
-          -DWITH_OPENEXRIMAGECONVERTER=OFF \
-          -DWITH_OPENEXRIMPORTER=OFF \
-          -DWITH_PNGIMAGECONVERTER=OFF \
-          -DWITH_PNGIMPORTER=OFF \
-          -DWITH_PRIMITIVEIMPORTER=ON \
-          -DWITH_SPIRVTOOLSSHADERCONVERTER=OFF \
-          -DWITH_STANFORDIMPORTER=ON \
-          -DWITH_STANFORDSCENECONVERTER=ON \
-          -DWITH_STBDXTIMAGECONVERTER=ON \
-          -DWITH_STBIMAGECONVERTER=ON \
-          -DWITH_STBIMAGEIMPORTER=ON \
-          -DWITH_STBTRUETYPEFONT=ON \
-          -DWITH_STLIMPORTER=OFF \
-          -DWITH_TINYGLTFIMPORTER=OFF \
+          -DMAGNUM_WITH_ASSIMPIMPORTER=OFF \
+          -DMAGNUM_WITH_BASISIMAGECONVERTER=ON \
+          -DMAGNUM_WITH_BASISIMPORTER=ON \
+          -DMAGNUM_WITH_CGLTFIMPORTER=ON \
+          -DMAGNUM_WITH_DDSIMPORTER=ON \
+          -DMAGNUM_WITH_DEVILIMAGEIMPORTER=OFF \
+          -DMAGNUM_WITH_GLSLANGSHADERCONVERTER=OFF \
+          -DMAGNUM_WITH_ICOIMPORTER=ON \
+          -DMAGNUM_WITH_JPEGIMAGECONVERTER=OFF \
+          -DMAGNUM_WITH_JPEGIMPORTER=OFF \
+          -DMAGNUM_WITH_KTXIMAGECONVERTER=ON \
+          -DMAGNUM_WITH_KTXIMPORTER=ON \
+          -DMAGNUM_WITH_MESHOPTIMIZERSCENECONVERTER=ON \
+          -DMAGNUM_WITH_MINIEXRIMAGECONVERTER=ON \
+          -DMAGNUM_WITH_OPENEXRIMAGECONVERTER=OFF \
+          -DMAGNUM_WITH_OPENEXRIMPORTER=OFF \
+          -DMAGNUM_WITH_PNGIMAGECONVERTER=OFF \
+          -DMAGNUM_WITH_PNGIMPORTER=OFF \
+          -DMAGNUM_WITH_PRIMITIVEIMPORTER=ON \
+          -DMAGNUM_WITH_SPIRVTOOLSSHADERCONVERTER=OFF \
+          -DMAGNUM_WITH_STANFORDIMPORTER=ON \
+          -DMAGNUM_WITH_STANFORDSCENECONVERTER=ON \
+          -DMAGNUM_WITH_STBDXTIMAGECONVERTER=ON \
+          -DMAGNUM_WITH_STBIMAGECONVERTER=ON \
+          -DMAGNUM_WITH_STBIMAGEIMPORTER=ON \
+          -DMAGNUM_WITH_STBTRUETYPEFONT=ON \
+          -DMAGNUM_WITH_STLIMPORTER=OFF \
+          -DMAGNUM_WITH_TINYGLTFIMPORTER=OFF \
           -G Ninja -S magnum-plugins -B magnum-plugins-build
         ninja -C magnum-plugins-build install/strip
     - name: Build & install Magnum Extras
@@ -173,7 +173,7 @@ jobs:
           -DCMAKE_PREFIX_PATH=$(pwd)/deps \
           `# https://cmake.org/cmake/help/latest/policy/CMP0095.html` \
           -DCMAKE_INSTALL_RPATH="\\\${ORIGIN}/../lib" \
-          -DWITH_PLAYER=ON \
+          -DMAGNUM_WITH_PLAYER=ON \
           -G Ninja -S magnum-extras -B magnum-extras-build
         ninja -C magnum-extras-build install/strip
     - name: Setup Python 3.10
@@ -200,7 +200,7 @@ jobs:
           `# which also means we don't need to over-escape anything` \
           -DCMAKE_BUILD_RPATH="\${ORIGIN}/../lib" \
           -DPYBIND11_PYTHON_VERSION=3.10 \
-          -DWITH_PYTHON=ON \
+          -DMAGNUM_WITH_PYTHON=ON \
           -G Ninja -S magnum-bindings -B magnum-bindings-build-10
         # We install just the version header here, the rest is done by setup.py
         ninja -C magnum-bindings-build-10 install/strip
@@ -230,7 +230,7 @@ jobs:
           `# which also means we don't need to over-escape anything` \
           -DCMAKE_BUILD_RPATH="\${ORIGIN}/../lib" \
           -DPYBIND11_PYTHON_VERSION=3.9 \
-          -DWITH_PYTHON=ON \
+          -DMAGNUM_WITH_PYTHON=ON \
           -G Ninja -S magnum-bindings -B magnum-bindings-build-9
         # We install just the version header here, the rest is done by setup.py
         ninja -C magnum-bindings-build-9 install/strip
@@ -260,7 +260,7 @@ jobs:
           `# which also means we don't need to over-escape anything` \
           -DCMAKE_BUILD_RPATH="\${ORIGIN}/../lib" \
           -DPYBIND11_PYTHON_VERSION=3.8 \
-          -DWITH_PYTHON=ON \
+          -DMAGNUM_WITH_PYTHON=ON \
           -G Ninja -S magnum-bindings -B magnum-bindings-build-8
         # We install just the version header here, the rest is done by setup.py
         ninja -C magnum-bindings-build-8 install/strip
