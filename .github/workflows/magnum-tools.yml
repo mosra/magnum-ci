@@ -220,36 +220,36 @@ jobs:
         ninja -C magnum-bindings-build-10 install/strip
         cd magnum-bindings-build-10/src/python
         python3.10 setup.py install --install-lib=python --root="$(pwd)/../../../install"
-    - name: Setup Python 3.9
-      uses: actions/setup-python@v3
-      with:
-        python-version: '3.9'
-    - name: Install Pybind11 for Python 3.9
-      run: |
-        cmake \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=$(pwd)/deps-9 \
-          -DPYBIND11_PYTHON_VERSION=3.9 \
-          -DPYBIND11_TEST=OFF \
-          -G Ninja -S pybind11-${{ env.PYBIND_VERSION }} -B pybind-build-9
-        ninja -C pybind-build-9 install/strip
-    - name: Build & install Magnum Bindings for Python 3.9
-      run: |
-        cmake \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
-          -DCMAKE_PREFIX_PATH="$(pwd)/deps;$(pwd)/deps-9" \
-          `# https://cmake.org/cmake/help/latest/policy/CMP0095.html` \
-          `# no install here (setuptools does), so no CMAKE_INSTALL_RPATH,` \
-          `# which also means we don't need to over-escape anything` \
-          -DCMAKE_BUILD_RPATH="\${ORIGIN}/../lib" \
-          -DPYBIND11_PYTHON_VERSION=3.9 \
-          -DMAGNUM_WITH_PYTHON=ON \
-          -G Ninja -S magnum-bindings -B magnum-bindings-build-9
-        # We install just the version header here, the rest is done by setup.py
-        ninja -C magnum-bindings-build-9 install/strip
-        cd magnum-bindings-build-9/src/python
-        python3.9 setup.py install --install-lib=python --root="$(pwd)/../../../install"
+    # - name: Setup Python 3.9
+    #   uses: actions/setup-python@v3
+    #   with:
+    #     python-version: '3.9'
+    # - name: Install Pybind11 for Python 3.9
+    #   run: |
+    #     cmake \
+    #       -DCMAKE_BUILD_TYPE=Release \
+    #       -DCMAKE_INSTALL_PREFIX=$(pwd)/deps-9 \
+    #       -DPYBIND11_PYTHON_VERSION=3.9 \
+    #       -DPYBIND11_TEST=OFF \
+    #       -G Ninja -S pybind11-${{ env.PYBIND_VERSION }} -B pybind-build-9
+    #     ninja -C pybind-build-9 install/strip
+    # - name: Build & install Magnum Bindings for Python 3.9
+    #   run: |
+    #     cmake \
+    #       -DCMAKE_BUILD_TYPE=Release \
+    #       -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+    #       -DCMAKE_PREFIX_PATH="$(pwd)/deps;$(pwd)/deps-9" \
+    #       `# https://cmake.org/cmake/help/latest/policy/CMP0095.html` \
+    #       `# no install here (setuptools does), so no CMAKE_INSTALL_RPATH,` \
+    #       `# which also means we don't need to over-escape anything` \
+    #       -DCMAKE_BUILD_RPATH="\${ORIGIN}/../lib" \
+    #       -DPYBIND11_PYTHON_VERSION=3.9 \
+    #       -DMAGNUM_WITH_PYTHON=ON \
+    #       -G Ninja -S magnum-bindings -B magnum-bindings-build-9
+    #     # We install just the version header here, the rest is done by setup.py
+    #     ninja -C magnum-bindings-build-9 install/strip
+    #     cd magnum-bindings-build-9/src/python
+    #     python3.9 setup.py install --install-lib=python --root="$(pwd)/../../../install"
     - name: Setup Python 3.8
       uses: actions/setup-python@v3
       with:
