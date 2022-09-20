@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 env:
   BASIS_VERSION: v1_15_update2
-  MESHOPTIMIZER_VERSION: 0.17
+  MESHOPTIMIZER_VERSION: 0.18
   SDL_VERSION: 2.0.20
   PYBIND_VERSION: 2.9.2
 
@@ -144,6 +144,7 @@ jobs:
           -DMAGNUM_WITH_DEVILIMAGEIMPORTER=OFF \
           -DMAGNUM_WITH_GLSLANGSHADERCONVERTER=OFF \
           -DMAGNUM_WITH_GLTFIMPORTER=ON \
+          -DMAGNUM_WITH_GLTFSCENECONVERTER=ON \
           -DMAGNUM_WITH_ICOIMPORTER=ON \
           -DMAGNUM_WITH_JPEGIMAGECONVERTER=OFF \
           -DMAGNUM_WITH_JPEGIMPORTER=OFF \
@@ -169,8 +170,7 @@ jobs:
           -DMAGNUM_WITH_WEBPIMPORTER=OFF \
           -G Ninja -S magnum-plugins -B magnum-plugins-build
         ninja -C magnum-plugins-build install/strip
-        # Copy also the gltf<->glb Python scripts, useful until we have a
-        # proper converter ready
+        # Copy also the useful gltf<->glb Python scripts
         install magnum-plugins/src/MagnumPlugins/GltfImporter/Test/glb2gltf.py $(pwd)/install/bin
         install magnum-plugins/src/MagnumPlugins/GltfImporter/Test/gltf2glb.py $(pwd)/install/bin
     - name: Build & install Magnum Extras
