@@ -3,7 +3,7 @@ name: Assimp
 on: [push, pull_request]
 
 env:
-  ASSIMP_VERSION: 5.1.2
+  ASSIMP_VERSION: 5.2.5
 
 jobs:
   windows:
@@ -104,4 +104,37 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: assimp-${{ env.ASSIMP_VERSION }}-windows-mingw
+        path: install
+
+  ubuntu:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-18.04]
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@v3
+    - name: Clone Assimp
+      uses: actions/checkout@v2
+      with:
+        repository: assimp/assimp
+        ref: v${{ env.ASSIMP_VERSION }}
+        path: assimp
+    - name: Build & install
+      run: |
+        cmake \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DASSIMP_BUILD_ASSIMP_TOOLS=OFF \
+          -DASSIMP_BUILD_TESTS=OFF \
+          -DASSIMP_BUILD_ZLIB=ON \
+          -DASSIMP_NO_EXPORT=ON \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -G Ninja -S assimp -B assimp-build
+        ninja -C assimp-build install/strip
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os }}
         path: install
