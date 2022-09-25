@@ -1,0 +1,28 @@
+name: Nightly build triggers
+
+on:
+  # To have a fucking button to trigger a rebuild, because of course it won't
+  # be there on the magnum-tools branch, only on workflows that are in master!!
+  # And of course not documented anywhere except for a random SO comment:
+  # https://stackoverflow.com/questions/58933155/manual-workflow-triggers-in-github-actions#comment111440150_62768214
+  workflow_dispatch:
+  schedule:
+    # 6:45 UTC every day
+    - cron: '45 6 * * *'
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  trigger:
+    name: Trigger Magnum Tools build
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Trigger Magnum Tools build
+      run: |
+        curl --fail-with-body -sSL \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/workflows/magnum-tools.yml/dispatches" \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H 'Accept: application/vnd.github.v3+json' \
+              -H 'Content-Type: application/json' \
+              --data "{\"ref\":\"magnum-tools\",\"inputs\":{}}"
