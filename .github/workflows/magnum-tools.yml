@@ -1,6 +1,6 @@
 name: Magnum Tools
 
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
 
 env:
   BASIS_VERSION: v1_15_update2
