@@ -126,6 +126,7 @@ jobs:
           -DPNG_SHARED=OFF \
           -DPNG_TESTS=OFF \
           -DSKIP_INSTALL_FILES=ON \
+          -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
           -G Ninja -S libpng -B libpng-build
         ninja -C libpng-build install/strip
     - name: Remove useless pkgconfig crap
