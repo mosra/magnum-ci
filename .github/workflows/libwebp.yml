@@ -1,0 +1,46 @@
+name: libwebp
+
+on: [push, pull_request]
+
+env:
+  WEBP_VERSION: 1.2.4
+
+jobs:
+  ubuntu:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-18.04]
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Clone libwebp
+      uses: actions/checkout@v3
+      with:
+        repository: webmproject/libwebp
+        ref: v${{ env.WEBP_VERSION }}
+        path: libwebp
+    - name: Build & install
+      run: |
+        cmake \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -DWEBP_LINK_STATIC=ON \
+          -DWEBP_BUILD_ANIM_UTILS=OFF \
+          -DWEBP_BUILD_CWEBP=OFF \
+          -DWEBP_BUILD_DWEBP=OFF \
+          -DWEBP_BUILD_GIF2WEBP=OFF \
+          -DWEBP_BUILD_IMG2WEBP=OFF \
+          -DWEBP_BUILD_VWEBP=OFF \
+          -DWEBP_BUILD_WEBPINFO=OFF \
+          -DWEBP_BUILD_LIBWEBPMUX=OFF \
+          -DWEBP_BUILD_WEBPMUX=OFF \
+          -DWEBP_BUILD_EXTRAS=OFF \
+          -G Ninja -S libwebp -B build
+        ninja -C build install/strip
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: libwebp-${{ env.WEBP_VERSION }}-${{ matrix.os }}
+        path: install
