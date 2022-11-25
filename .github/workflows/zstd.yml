@@ -1,0 +1,108 @@
+name: zstd
+
+on: [push, pull_request]
+
+env:
+  ZSTD_VERSION: 1.5.2
+
+jobs:
+  windows:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-2019]
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Set up Visual Studio environment
+      uses: seanmiddleditch/gha-setup-vsdevenv@master
+    - name: Clone zstd
+      uses: actions/checkout@v3
+      with:
+        repository: facebook/zstd
+        ref: v${{ env.ZSTD_VERSION }}
+        path: zstd
+    - name: Build & install
+      shell: cmd
+      run: |
+        cmake ^
+          -DCMAKE_C_COMPILER=cl.exe ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
+          -DZSTD_BUILD_PROGRAMS=OFF ^
+          -DZSTD_BUILD_SHARED=OFF ^
+          -DZSTD_BUILD_STATIC=ON ^
+          -DZSTD_MULTITHREAD_SUPPORT=OFF ^
+          -G Ninja -S zstd/build/cmake -B zstd-build
+        ninja -C zstd-build install
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: zstd-${{ env.ZSTD_VERSION }}-${{ matrix.os }}
+        path: install
+
+  windows-mingw:
+    name: windows-mingw
+    runs-on: windows-2019
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Set up MinGW environment
+      uses: msys2/setup-msys2@v2
+    - name: Clone zstd
+      uses: actions/checkout@v3
+      with:
+        repository: facebook/zstd
+        ref: v${{ env.ZSTD_VERSION }}
+        path: zstd
+    - name: Build & install
+      shell: cmd
+      run: |
+        cmake ^
+          -DCMAKE_C_COMPILER=gcc.exe ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
+          -DZSTD_BUILD_PROGRAMS=OFF ^
+          -DZSTD_BUILD_SHARED=OFF ^
+          -DZSTD_BUILD_STATIC=ON ^
+          -DZSTD_MULTITHREAD_SUPPORT=OFF ^
+          -G Ninja -S zstd/build/cmake -B zstd-build
+        ninja -C zstd-build install/strip
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: zstd-${{ env.ZSTD_VERSION }}-windows-mingw
+        path: install
+
+  ubuntu:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-18.04]
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Clone zstd
+      uses: actions/checkout@v3
+      with:
+        repository: facebook/zstd
+        ref: v${{ env.ZSTD_VERSION }}
+        path: zstd
+    - name: Build & install
+      run: |
+        cmake \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -DZSTD_BUILD_PROGRAMS=OFF \
+          -DZSTD_BUILD_SHARED=OFF \
+          -DZSTD_BUILD_STATIC=ON \
+          -DZSTD_MULTITHREAD_SUPPORT=OFF \
+          -G Ninja -S zstd/build/cmake -B zstd-build
+        ninja -C zstd-build install/strip
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: zstd-${{ env.ZSTD_VERSION }}-${{ matrix.os }}
+        path: install
