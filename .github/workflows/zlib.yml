@@ -25,17 +25,14 @@ jobs:
         path: zlib
     - name: Build & install
       shell: cmd
-      # -S and -B is only since CMake 3.13, Windows 2016 uses 3.12 even though
-      # the README says 3.19.1
       run: |
-        mkdir build && cd build
-        cmake ../zlib ^
+        cmake ^
           -DCMAKE_C_COMPILER=cl.exe ^
           -DCMAKE_BUILD_TYPE=Release ^
           -DSKIP_INSTALL_FILES=ON ^
-          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/../install ^
-          -G Ninja
-        ninja install
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
+          -G Ninja -S zlib -B zlib-build
+        ninja -C zlib-build install
     - name: Remove shared libraries
       shell: cmd
       run: |
@@ -64,14 +61,13 @@ jobs:
     - name: Build & install
       shell: cmd
       run: |
-        mkdir build && cd build
-        cmake ../zlib ^
+        cmake ^
           -DCMAKE_C_COMPILER=gcc.exe ^
           -DCMAKE_BUILD_TYPE=Release ^
           -DSKIP_INSTALL_FILES=ON ^
-          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/../install ^
-          -G Ninja
-        ninja install
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
+          -G Ninja -S zlib -B zlib-build
+        ninja -C zlib-build install/strip
     - name: Remove shared libraries
       shell: cmd
       run: |
