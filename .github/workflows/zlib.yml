@@ -82,3 +82,35 @@ jobs:
       with:
         name: zlib-${{ env.ZLIB_VERSION }}-windows-mingw
         path: install
+
+  ubuntu:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-18.04]
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Clone zlib
+      uses: actions/checkout@v3
+      with:
+        repository: madler/zlib
+        ref: v${{ env.ZLIB_VERSION }}
+        path: zlib
+    - name: Build & install
+      run: |
+        cmake \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DSKIP_INSTALL_FILES=ON \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -G Ninja -S zlib -B zlib-build
+        ninja -C zlib-build install/strip
+    - name: Remove shared libraries
+      run: |
+        rm -r install/lib/libz.so*
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os }}
+        path: install
