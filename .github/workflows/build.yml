@@ -7,8 +7,8 @@ on:
   # https://stackoverflow.com/questions/58933155/manual-workflow-triggers-in-github-actions#comment111440150_62768214
   workflow_dispatch:
   schedule:
-    # 6:45 UTC every day
-    - cron: '45 6 * * *'
+    # 6:45 UTC, Monday and Thursday
+    - cron: '45 6 * * 1,4'
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
