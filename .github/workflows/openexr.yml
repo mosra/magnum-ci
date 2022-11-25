@@ -3,8 +3,13 @@ name: OpenEXR
 on: [push, pull_request]
 
 env:
-  ZLIB_VERSION: 1.2.11
-  OPENEXR_VERSION: 2.5.5
+  ZLIB_VERSION: 1.2.13
+  OPENEXR_VERSION: 3.1.5
+  # For testing on the magnum-plugins CI we deliberately want older versions
+  # -- the stock version on Ubuntu 18.04 is 2.2, which is too old and leaky,
+  # so can't use that, but using version 3 would mean we lose the possibility
+  # of testing against older versions
+  OPENEXR_VERSION_25: 2.5.5
 
 jobs:
   windows:
@@ -12,14 +17,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2019, windows-2016]
+        os: [windows-2019]
     steps:
     - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@v3
+      uses: seanmiddleditch/gha-setup-ninja@master
     - name: Set up Visual Studio environment
-      uses: seanmiddleditch/gha-setup-vsdevenv@v3
+      uses: seanmiddleditch/gha-setup-vsdevenv@master
     - name: Clone OpenEXR
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         repository: AcademySoftwareFoundation/openexr
         ref: v${{ env.OPENEXR_VERSION }}
@@ -32,49 +37,44 @@ jobs:
         7z x zlib.zip -o${{ github.workspace }}/deps
     - name: Build & install Debug
       shell: cmd
-      # -S and -B is only since CMake 3.13, Windows 2016 uses 3.12 even though
-      # the README says 3.19.1. CMake is able to find `zlibstatic` only since
-      # 3.15, supply the location manually for Windows 2016:
-      # https://github.com/Kitware/CMake/commit/4ff3ab2ac9d0c81c927d25117e5a14cb8ebbbb86
       run: |
-        mkdir build-debug && cd build-debug
-        cmake ../openexr ^
+        cmake ^
           -DCMAKE_C_COMPILER=cl.exe ^
           -DCMAKE_CXX_COMPILER=cl.exe ^
-          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/deps ^
+          -DCMAKE_PREFIX_PATH=$%CD:\=/%/deps ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install-debug ^
           -DCMAKE_BUILD_TYPE=Debug ^
           -DPYILMBASE_ENABLE=OFF ^
           -DBUILD_SHARED_LIBS=OFF ^
           -DBUILD_TESTING=OFF ^
-          -DINSTALL_OPENEXR_DOCS=OFF ^
-          -DINSTALL_OPENEXR_EXAMPLES=OFF ^
-          -DOPENEXR_BUILD_UTILS=OFF ^
+          -DOPENEXR_BUILD_TOOLS=OFF ^
           -DOPENEXR_CXX_STANDARD=11 ^
-          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/../install-debug ^
-          -DZLIB_LIBRARY=${{ github.workspace }}/deps/lib/zlibstatic.lib ^
-          -G Ninja
-        ninja install
+          -DOPENEXR_INSTALL_EXAMPLES=OFF ^
+          -DOPENEXR_INSTALL_PKG_CONFIG=OFF ^
+          -DOPENEXR_INSTALL_TOOLS=OFF ^
+          -DOPENEXR_FORCE_INTERNAL_IMATH=ON ^
+          -G Ninja -S openexr -B build-debug
+        ninja -C build-debug install
     - name: Build & install Release
       shell: cmd
       # Same comment as above.
       run: |
-        mkdir build && cd build
-        cmake ../openexr ^
+        cmake ^
           -DCMAKE_C_COMPILER=cl.exe ^
           -DCMAKE_CXX_COMPILER=cl.exe ^
-          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/deps ^
+          -DCMAKE_PREFIX_PATH=%CD:\=/%/deps ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
           -DCMAKE_BUILD_TYPE=Release ^
           -DPYILMBASE_ENABLE=OFF ^
           -DBUILD_SHARED_LIBS=OFF ^
           -DBUILD_TESTING=OFF ^
-          -DINSTALL_OPENEXR_DOCS=OFF ^
-          -DINSTALL_OPENEXR_EXAMPLES=OFF ^
-          -DOPENEXR_BUILD_UTILS=OFF ^
+          -DOPENEXR_BUILD_TOOLS=OFF ^
           -DOPENEXR_CXX_STANDARD=11 ^
-          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/../install ^
-          -DZLIB_LIBRARY=${{ github.workspace }}/deps/lib/zlibstatic.lib ^
-          -G Ninja
-        ninja install
+          -DOPENEXR_INSTALL_EXAMPLES=OFF ^
+          -DOPENEXR_INSTALL_TOOLS=OFF ^
+          -DOPENEXR_FORCE_INTERNAL_IMATH=ON ^
+          -G Ninja -S openexr -B build
+        ninja -C build install
     - name: Upload Debug artifacts
       uses: actions/upload-artifact@v1
       with:
@@ -91,11 +91,11 @@ jobs:
     runs-on: windows-2019
     steps:
     - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@v3
+      uses: seanmiddleditch/gha-setup-ninja@master
     - name: Set up MinGW environment
       uses: msys2/setup-msys2@v2
     - name: Clone OpenEXR
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         repository: AcademySoftwareFoundation/openexr
         ref: v${{ env.OPENEXR_VERSION }}
@@ -109,22 +109,22 @@ jobs:
     - name: Build & install
       shell: cmd
       run: |
-        mkdir build && cd build
-        cmake ../openexr ^
+        cmake ^
           -DCMAKE_C_COMPILER=gcc.exe ^
           -DCMAKE_CXX_COMPILER=g++.exe ^
-          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/deps ^
+          -DCMAKE_PREFIX_PATH=%CD:\=/%/deps ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
           -DCMAKE_BUILD_TYPE=Release ^
           -DPYILMBASE_ENABLE=OFF ^
           -DBUILD_SHARED_LIBS=OFF ^
           -DBUILD_TESTING=OFF ^
-          -DINSTALL_OPENEXR_DOCS=OFF ^
-          -DINSTALL_OPENEXR_EXAMPLES=OFF ^
-          -DOPENEXR_BUILD_UTILS=OFF ^
+          -DOPENEXR_BUILD_TOOLS=OFF ^
           -DOPENEXR_CXX_STANDARD=11 ^
-          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/../install ^
-          -G Ninja
-        ninja install
+          -DOPENEXR_INSTALL_EXAMPLES=OFF ^
+          -DOPENEXR_INSTALL_TOOLS=OFF ^
+          -DOPENEXR_FORCE_INTERNAL_IMATH=ON ^
+          -G Ninja -S openexr -B build
+        ninja -C build install/strip
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
       with:
@@ -132,36 +132,79 @@ jobs:
         path: install
 
   ubuntu:
-    name: ${{ matrix.os }}-gcc${{ matrix.env.GCC }}
+    name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        include:
-        - os: ubuntu-16.04
-          env:
-            GCC: 4.8
-        - os: ubuntu-16.04
-          env:
-            GCC: 5
+        os: [ubuntu-18.04]
     steps:
-    - name: Install GCC 4.8
-      run: sudo apt-get install g++-4.8
-      if: ${{ matrix.env.GCC == '4.8' }}
     - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@v3
+      uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Fetch prebuilt zlib
+      run: |
+        mkdir -p deps && cd deps
+        wget https://ci.magnum.graphics/zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os }}.zip
+        unzip zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os }}.zip
     - name: Clone OpenEXR
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         repository: AcademySoftwareFoundation/openexr
         ref: v${{ env.OPENEXR_VERSION }}
         path: openexr
     - name: Build & install
       run: |
-        mkdir build && cd build
-        cmake ../openexr \
+        cmake \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -DCMAKE_PREFIX_PATH=$(pwd)/deps \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DBUILD_TESTING=OFF \
+          -DOPENEXR_BUILD_TOOLS=OFF \
+          -DOPENEXR_CXX_STANDARD=11 \
+          -DOPENEXR_INSTALL_EXAMPLES=OFF \
+          -DOPENEXR_INSTALL_TOOLS=OFF \
+          -DOPENEXR_INSTALL_PKG_CONFIG=OFF \
+          -DOPENEXR_FORCE_INTERNAL_IMATH=ON \
+          -G Ninja -S openexr -B build
+        ninja -C build install/strip
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: openexr-${{ env.OPENEXR_VERSION }}-${{ matrix.os }}
+        path: install
+
+  ubuntu-25:
+    name: 25-${{ matrix.os }}-gcc${{ matrix.env.GCC }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+        - os: ubuntu-18.04
+          env:
+            GCC: 4.8
+        - os: ubuntu-18.04
+          env:
+            GCC: 7
+    steps:
+    - name: Install GCC 4.8
+      run: sudo apt-get install g++-4.8
+      if: ${{ matrix.env.GCC == '4.8' }}
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
+    # No (static) zlib used here -- we want it to depend on the system version
+    - name: Clone OpenEXR
+      uses: actions/checkout@v3
+      with:
+        repository: AcademySoftwareFoundation/openexr
+        ref: v${{ env.OPENEXR_VERSION_25 }}
+        path: openexr
+    - name: Build & install
+      run: |
+        cmake \
           -DCMAKE_C_COMPILER=gcc-${{ matrix.env.GCC }} \
           -DCMAKE_CXX_COMPILER=g++-${{ matrix.env.GCC }} \
           -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
           -DPYILMBASE_ENABLE=OFF \
           -DBUILD_SHARED_LIBS=OFF \
           -DBUILD_TESTING=OFF \
@@ -172,11 +215,10 @@ jobs:
           -DILMBASE_INSTALL_PKG_CONFIG=OFF \
           -DOPENEXR_INSTALL_PKG_CONFIG=OFF \
           -DPYILMBASE_INSTALL_PKG_CONFIG=OFF \
-          -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
-          -G Ninja
-        ninja install
+          -G Ninja -S openexr -B build
+        ninja -C build install/strip
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
       with:
-        name: openexr-${{ env.OPENEXR_VERSION }}-${{ matrix.os }}-gcc${{ matrix.env.GCC }}
+        name: openexr-${{ env.OPENEXR_VERSION_25 }}-${{ matrix.os }}-gcc${{ matrix.env.GCC }}
         path: install
