@@ -1,0 +1,90 @@
+name: libjpeg-turbo
+
+on: [push, pull_request]
+
+env:
+  JPEG_VERSION: 2.1.4
+
+jobs:
+  windows:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-2019]
+    steps:
+    - name: Set up NASM
+      uses: ilammy/setup-nasm@v1
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Set up Visual Studio environment
+      uses: seanmiddleditch/gha-setup-vsdevenv@master
+    - name: Clone jpeg-turbo
+      uses: actions/checkout@v3
+      with:
+        repository: libjpeg-turbo/libjpeg-turbo
+        ref: ${{ env.JPEG_VERSION }}
+        path: libjpeg-turbo
+    - name: Build & install
+      shell: cmd
+      run: |
+        cmake ^
+          -DCMAKE_C_COMPILER=cl.exe ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DWITH_JPEG8=ON ^
+          -DENABLE_SHARED=OFF ^
+          -DREQUIRE_SIMD=ON ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
+          -G Ninja -S libjpeg-turbo -B build
+        ninja -C build install
+    - name: Remove useless cruft
+      shell: cmd
+      run: |
+        cd install
+        del bin share /s /q
+        rmdir bin share /s /q
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: libjpeg-turbo-${{ env.JPEG_VERSION }}-${{ matrix.os }}
+        path: install
+
+  # Not built for windows-mingw because of ABI issues related to
+  # __imp___acrt_iob_func; see magnum-plugins/package/ci/appveyor-desktop-mingw.bat
+  # for details.
+
+  ubuntu:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-18.04]
+    steps:
+    - name: Set up NASM
+      uses: ilammy/setup-nasm@v1
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Clone jpeg-turbo
+      uses: actions/checkout@v3
+      with:
+        repository: libjpeg-turbo/libjpeg-turbo
+        ref: ${{ env.JPEG_VERSION }}
+        path: libjpeg-turbo
+    - name: Build & install
+      run: |
+        cmake \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -DWITH_JPEG8=ON \
+          -DENABLE_SHARED=OFF \
+          -DREQUIRE_SIMD=ON \
+          -G Ninja -S libjpeg-turbo -B build
+        ninja -C build install/strip
+    - name: Remove useless cruft
+      run: |
+        rm -r install/share install/bin
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: libjpeg-turbo-${{ env.JPEG_VERSION }}-${{ matrix.os }}
+        path: install
