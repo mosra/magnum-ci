@@ -1,0 +1,138 @@
+name: libpng
+
+on: [push, pull_request]
+
+env:
+  ZLIB_VERSION: 1.2.13
+  PNG_VERSION: 1.6.39
+
+jobs:
+  windows:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-2019]
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@v3
+    - name: Set up Visual Studio environment
+      uses: seanmiddleditch/gha-setup-vsdevenv@v3
+    - name: Fetch prebuilt zlib
+      run: |
+        mkdir deps
+        cd deps
+        Invoke-WebRequest https://ci.magnum.graphics/zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os }}.zip -O zlib.zip
+        unzip zlib.zip
+    - name: Clone libpng
+      uses: actions/checkout@v2
+      with:
+        repository: glennrp/libpng
+        ref: v${{ env.PNG_VERSION }}
+        path: libpng
+    - name: Build & install
+      run: |
+        cmake ^
+          -DCMAKE_C_COMPILER=cl.exe ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DCMAKE_PREFIX_PATH=%CD:\=/%/deps ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
+          -DPNG_EXECUTABLES=OFF ^
+          -DPNG_SHARED=OFF ^
+          -DPNG_TESTS=OFF ^
+          -DSKIP_INSTALL_FILES=ON ^
+          -G Ninja -S libpng -B libpng-build
+        ninja -C libpng-build install
+      shell: cmd
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: libpng-${{ env.PNG_VERSION }}-${{ matrix.os }}
+        path: install
+
+  windows-mingw:
+    name: windows-mingw
+    runs-on: windows-2019
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@v3
+    - name: Set up MinGW environment
+      uses: msys2/setup-msys2@v2
+    - name: Fetch prebuilt zlib
+      run: |
+        mkdir deps
+        cd deps
+        Invoke-WebRequest https://ci.magnum.graphics/zlib-${{ env.ZLIB_VERSION }}-windows-mingw.zip -O zlib.zip
+        unzip zlib.zip
+    - name: Clone libpng
+      uses: actions/checkout@v2
+      with:
+        repository: glennrp/libpng
+        ref: v${{ env.PNG_VERSION }}
+        path: libpng
+    - name: Build & install
+      run: |
+        cmake ^
+          -DCMAKE_C_COMPILER=gcc.exe ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DCMAKE_PREFIX_PATH=%CD:\=/%/deps ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
+          -DPNG_EXECUTABLES=OFF ^
+          -DPNG_SHARED=OFF ^
+          -DPNG_TESTS=OFF ^
+          -DSKIP_INSTALL_FILES=ON ^
+          -G Ninja -S libpng -B libpng-build
+        ninja -C libpng-build install/strip
+      shell: cmd
+    - name: Remove useless pkgconfig crap
+      shell: cmd
+      run: |
+        cd install
+        del bin /s /q
+        rmdir bin /s /q
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: libpng-${{ env.PNG_VERSION }}-windows-mingw
+        path: install
+
+  ubuntu:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-18.04]
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Fetch prebuilt zlib
+      run: |
+        mkdir -p deps && cd deps
+        wget https://ci.magnum.graphics/zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os }}.zip
+        unzip zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os }}.zip
+    - name: Clone libpng
+      uses: actions/checkout@v3
+      with:
+        repository: glennrp/libpng
+        ref: v${{ env.PNG_VERSION }}
+        path: libpng
+    - name: Build & install
+      run: |
+        cmake \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_PREFIX_PATH=$(pwd)/deps \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -DPNG_EXECUTABLES=OFF \
+          -DPNG_SHARED=OFF \
+          -DPNG_TESTS=OFF \
+          -DSKIP_INSTALL_FILES=ON \
+          -G Ninja -S libpng -B libpng-build
+        ninja -C libpng-build install/strip
+    - name: Remove useless pkgconfig crap
+      run: |
+        rm -r install/bin
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: libpng-${{ env.PNG_VERSION }}-${{ matrix.os }}
+        path: install
