@@ -78,6 +78,7 @@ jobs:
           -DWITH_JPEG8=ON \
           -DENABLE_SHARED=OFF \
           -DREQUIRE_SIMD=ON \
+          -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
           -G Ninja -S libjpeg-turbo -B build
         ninja -C build install/strip
     - name: Remove useless cruft
