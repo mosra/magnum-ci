@@ -6,6 +6,81 @@ env:
   MESHOPTIMIZER_VERSION: 0.18
 
 jobs:
+  windows:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-2019]
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Set up Visual Studio environment
+      uses: seanmiddleditch/gha-setup-vsdevenv@master
+    - name: Clone MeshOptimizer
+      uses: actions/checkout@v3
+      with:
+        repository: zeux/meshoptimizer
+        ref: v${{ env.MESHOPTIMIZER_VERSION }}
+        path: meshoptimizer
+    - name: Build & install Debug
+      shell: cmd
+      run: |
+        cmake ^
+          -DCMAKE_C_COMPILER=cl.exe ^
+          -DCMAKE_BUILD_TYPE=Debug ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install-debug ^
+          -G Ninja -S meshoptimizer -B meshoptimizer-build-debug
+        ninja -C meshoptimizer-build-debug install
+    - name: Build & install Release
+      shell: cmd
+      run: |
+        cmake ^
+          -DCMAKE_C_COMPILER=cl.exe ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
+          -G Ninja -S meshoptimizer -B meshoptimizer-build
+        ninja -C meshoptimizer-build install
+    - name: Upload Debug artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}-debug
+        path: install-debug
+    - name: Upload Release artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}
+        path: install
+
+  windows-mingw:
+    name: windows-mingw
+    runs-on: windows-2019
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Set up MinGW environment
+      uses: msys2/setup-msys2@v2
+    - name: Clone MeshOptimizer
+      uses: actions/checkout@v3
+      with:
+        repository: zeux/meshoptimizer
+        ref: v${{ env.MESHOPTIMIZER_VERSION }}
+        path: meshoptimizer
+    - name: Build & install
+      shell: cmd
+      run: |
+        cmake ^
+          -DCMAKE_C_COMPILER=gcc.exe ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
+          -G Ninja -S meshoptimizer -B meshoptimizer-build
+        ninja -C meshoptimizer-build install/strip
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-windows-mingw
+        path: install
+
   ubuntu:
     name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -14,9 +89,9 @@ jobs:
         os: [ubuntu-18.04]
     steps:
     - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@v3
+      uses: seanmiddleditch/gha-setup-ninja@master
     - name: Clone MeshOptimizer
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         repository: zeux/meshoptimizer
         ref: v${{ env.MESHOPTIMIZER_VERSION }}
