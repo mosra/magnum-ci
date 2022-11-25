@@ -100,6 +100,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release \
           -DSKIP_INSTALL_FILES=ON \
           -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
           -G Ninja -S zlib -B zlib-build
         ninja -C zlib-build install/strip
     - name: Remove shared libraries
