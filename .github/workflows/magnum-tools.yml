@@ -8,6 +8,11 @@ env:
   MESHOPTIMIZER_VERSION: 0.18
   SDL_VERSION: 2.0.20
   PYBIND_VERSION: 2.9.2
+  ZLIB_VERSION: 1.2.13
+  PNG_VERSION: 1.6.39
+  JPEG_VERSION: 2.1.4
+  OPENEXR_VERSION: 3.1.5
+  WEBP_VERSION: 1.2.4
 
 jobs:
   ubuntu:
@@ -77,6 +82,31 @@ jobs:
         cd deps
         wget https://ci.magnum.graphics/assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os }}.zip
         unzip assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os }}.zip
+    - name: Fetch prebuilt zlib
+      run: |
+        cd deps
+        wget https://ci.magnum.graphics/zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os }}.zip
+        unzip zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os }}.zip
+    - name: Fetch prebuilt libpng
+      run: |
+        cd deps
+        wget https://ci.magnum.graphics/libpng-${{ env.PNG_VERSION }}-${{ matrix.os }}.zip
+        unzip libpng-${{ env.PNG_VERSION }}-${{ matrix.os }}.zip
+    - name: Fetch prebuilt libjpeg-turbo
+      run: |
+        cd deps
+        wget https://ci.magnum.graphics/libjpeg-turbo-${{ env.JPEG_VERSION }}-${{ matrix.os }}.zip
+        unzip libjpeg-turbo-${{ env.JPEG_VERSION }}-${{ matrix.os }}.zip
+    - name: Fetch prebuilt openexr
+      run: |
+        cd deps
+        wget https://ci.magnum.graphics/openexr-${{ env.OPENEXR_VERSION }}-${{ matrix.os }}.zip
+        unzip openexr-${{ env.OPENEXR_VERSION }}-${{ matrix.os }}.zip
+    - name: Fetch prebuilt libwebp
+      run: |
+        cd deps
+        wget https://ci.magnum.graphics/libwebp-${{ env.WEBP_VERSION }}-${{ matrix.os }}.zip
+        unzip libwebp-${{ env.WEBP_VERSION }}-${{ matrix.os }}.zip
     - name: Fetch Basis Universal sources
       run: |
         mkdir basis-universal && cd basis-universal
@@ -151,16 +181,16 @@ jobs:
           -DMAGNUM_WITH_GLTFIMPORTER=ON \
           -DMAGNUM_WITH_GLTFSCENECONVERTER=ON \
           -DMAGNUM_WITH_ICOIMPORTER=ON \
-          -DMAGNUM_WITH_JPEGIMAGECONVERTER=OFF \
-          -DMAGNUM_WITH_JPEGIMPORTER=OFF \
+          -DMAGNUM_WITH_JPEGIMAGECONVERTER=ON \
+          -DMAGNUM_WITH_JPEGIMPORTER=ON \
           -DMAGNUM_WITH_KTXIMAGECONVERTER=ON \
           -DMAGNUM_WITH_KTXIMPORTER=ON \
           -DMAGNUM_WITH_MESHOPTIMIZERSCENECONVERTER=ON \
           -DMAGNUM_WITH_MINIEXRIMAGECONVERTER=ON \
-          -DMAGNUM_WITH_OPENEXRIMAGECONVERTER=OFF \
-          -DMAGNUM_WITH_OPENEXRIMPORTER=OFF \
-          -DMAGNUM_WITH_PNGIMAGECONVERTER=OFF \
-          -DMAGNUM_WITH_PNGIMPORTER=OFF \
+          -DMAGNUM_WITH_OPENEXRIMAGECONVERTER=ON \
+          -DMAGNUM_WITH_OPENEXRIMPORTER=ON \
+          -DMAGNUM_WITH_PNGIMAGECONVERTER=ON \
+          -DMAGNUM_WITH_PNGIMPORTER=ON \
           -DMAGNUM_WITH_PRIMITIVEIMPORTER=ON \
           -DMAGNUM_WITH_SPIRVTOOLSSHADERCONVERTER=OFF \
           -DMAGNUM_WITH_STANFORDIMPORTER=ON \
@@ -171,7 +201,7 @@ jobs:
           -DMAGNUM_WITH_STBRESIZEIMAGECONVERTER=ON \
           -DMAGNUM_WITH_STBTRUETYPEFONT=ON \
           -DMAGNUM_WITH_STLIMPORTER=ON \
-          -DMAGNUM_WITH_WEBPIMPORTER=OFF \
+          -DMAGNUM_WITH_WEBPIMPORTER=ON \
           -G Ninja -S magnum-plugins -B magnum-plugins-build
         ninja -C magnum-plugins-build install/strip
         # Copy also the useful gltf<->glb Python scripts
