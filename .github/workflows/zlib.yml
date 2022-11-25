@@ -3,7 +3,7 @@ name: zlib
 on: [push, pull_request]
 
 env:
-  ZLIB_VERSION: 1.2.11
+  ZLIB_VERSION: 1.2.13
 
 jobs:
   windows:
@@ -14,11 +14,11 @@ jobs:
         os: [windows-2019, windows-2016]
     steps:
     - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@v3
+      uses: seanmiddleditch/gha-setup-ninja@master
     - name: Set up Visual Studio environment
-      uses: seanmiddleditch/gha-setup-vsdevenv@v3
+      uses: seanmiddleditch/gha-setup-vsdevenv@master
     - name: Clone zlib
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         repository: madler/zlib
         ref: v${{ env.ZLIB_VERSION }}
@@ -52,11 +52,11 @@ jobs:
     runs-on: windows-2019
     steps:
     - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@v3
+      uses: seanmiddleditch/gha-setup-ninja@master
     - name: Set up MinGW environment
       uses: msys2/setup-msys2@v2
     - name: Clone zlib
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         repository: madler/zlib
         ref: v${{ env.ZLIB_VERSION }}
