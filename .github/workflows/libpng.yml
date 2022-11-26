@@ -8,11 +8,19 @@ env:
 
 jobs:
   windows:
-    name: ${{ matrix.os }}
+    name: ${{ matrix.os }}${{ matrix.env.SUFFIX }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2019]
+        include:
+        - os: windows-2019
+          env:
+            COMPILER: -DCMAKE_C_COMPILER=cl.exe
+            SUFFIX:
+        - os: windows-2019
+          env:
+            COMPILER: -DCMAKE_C_COMPILER="C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/Llvm/bin/clang-cl.exe" -DCMAKE_LINKER="C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/Llvm/bin/lld-link.exe" -DCMAKE_C_FLAGS="-m64 /EHsc"
+            SUFFIX: -clang-cl
     steps:
     - name: Install Ninja
       uses: seanmiddleditch/gha-setup-ninja@v3
@@ -33,7 +41,7 @@ jobs:
     - name: Build & install
       run: |
         cmake ^
-          -DCMAKE_C_COMPILER=cl.exe ^
+          ${{ env.COMPILER }} ^
           -DCMAKE_BUILD_TYPE=Release ^
           -DCMAKE_PREFIX_PATH=%CD:\=/%/deps ^
           -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
@@ -47,7 +55,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
       with:
-        name: libpng-${{ env.PNG_VERSION }}-${{ matrix.os }}
+        name: libpng-${{ env.PNG_VERSION }}-${{ matrix.os }}${{ matrix.env.SUFFIX }}
         path: install
 
   windows-mingw:
