@@ -169,7 +169,8 @@ jobs:
           -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
           -DCMAKE_PREFIX_PATH=$(pwd)/deps \
           `# https://cmake.org/cmake/help/latest/policy/CMP0095.html` \
-          -DCMAKE_INSTALL_RPATH="\\\${ORIGIN}/../lib" \
+          `# plugins also need to look up to lib/ from lib/magnum/<interface>/` \
+          -DCMAKE_INSTALL_RPATH="\\\${ORIGIN}/../lib;\\\${ORIGIN}/../.." \
           -DBASIS_UNIVERSAL_DIR=$(pwd)/basis-universal \
           -DMAGNUM_WITH_ASSIMPIMPORTER=ON \
           -DMAGNUM_WITH_ASTCIMPORTER=ON \
