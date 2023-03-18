@@ -3,8 +3,11 @@ name: libspng
 on: [push, pull_request]
 
 env:
-  ZLIBNG_VERSION: 2.0.7
-  ZLIB_VERSION: 1.2.13
+  # Idiotic GitHub Actions "language" can't handle environment variables
+  # referencing environment variables defined in outer scope, so these aren't
+  # actually used anywhere BUT INSTEAD THE VERSION IS DUPLICATED, F.F.S.
+  # ZLIB_VERSION: 1.2.13
+  # ZLIBNG_VERSION: 2.0.7
   LIBSPNG_VERSION: 0.7.3
 
 jobs:
@@ -16,11 +19,13 @@ jobs:
         include:
         - os: windows-2019
           env:
-            ZLIB_LIBRARY: zlib-${{ env.ZLIB_VERSION }}
+            # THIS STUPID CRAP CAN NOT DO `zlib-${{ env.ZLIB_VERSION }}`, FUCK
+            ZLIB_LIBRARY: zlib-1.2.13
             SUFFIX:
         - os: windows-2019
           env:
-            ZLIB_LIBRARY: zlibng-${{ env.ZLIBNG_VERSION }}
+            # SAME, FUCK
+            ZLIB_LIBRARY: zlib-ng-2.0.7
             SUFFIX: -zng
     steps:
     - name: Install Ninja
@@ -31,7 +36,7 @@ jobs:
       run: |
         mkdir deps
         cd deps
-        Invoke-WebRequest https://ci.magnum.graphics/${{ env.ZLIB_LIBRARY }}-${{ matrix.os }}.zip -O zlib.zip
+        Invoke-WebRequest https://ci.magnum.graphics/${{ matrix.env.ZLIB_LIBRARY }}-${{ matrix.os }}.zip -O zlib.zip
         unzip zlib.zip
     - name: Clone libspng
       uses: actions/checkout@v3
@@ -65,11 +70,13 @@ jobs:
         include:
         - os: windows-2019
           env:
-            ZLIB_LIBRARY: zlib-${{ env.ZLIB_VERSION }}
+            # THIS STUPID CRAP CAN NOT DO `zlib-${{ env.ZLIB_VERSION }}`, FUCK
+            ZLIB_LIBRARY: zlib-1.2.13
             SUFFIX:
         - os: windows-2019
           env:
-            ZLIB_LIBRARY: zlibng-${{ env.ZLIBNG_VERSION }}
+            # SAME, FUCK
+            ZLIB_LIBRARY: zlib-ng-2.0.7
             SUFFIX: -zng
     steps:
     - name: Install Ninja
@@ -80,7 +87,7 @@ jobs:
       run: |
         mkdir deps
         cd deps
-        Invoke-WebRequest https://ci.magnum.graphics/${{ env.ZLIB_LIBRARY }}-windows-mingw.zip -O zlib.zip
+        Invoke-WebRequest https://ci.magnum.graphics/${{ matrix.env.ZLIB_LIBRARY }}-windows-mingw.zip -O zlib.zip
         unzip zlib.zip
     - name: Clone libspng
       uses: actions/checkout@v3
@@ -120,11 +127,13 @@ jobs:
         include:
         - os: ubuntu-18.04
           env:
-            ZLIB_LIBRARY: zlib-${{ env.ZLIB_VERSION }}
+            # THIS STUPID CRAP CAN NOT DO `zlib-${{ env.ZLIB_VERSION }}`, FUCK
+            ZLIB_LIBRARY: zlib-1.2.13
             SUFFIX:
         - os: ubuntu-18.04
           env:
-            ZLIB_LIBRARY: zlibng-${{ env.ZLIBNG_VERSION }}
+            # SAME, FUCK
+            ZLIB_LIBRARY: zlib-ng-2.0.7
             SUFFIX: -zng
     steps:
     - name: Install Ninja
@@ -132,8 +141,8 @@ jobs:
     - name: Fetch prebuilt zlib${{ matrix.env.SUFFIX }}
       run: |
         mkdir -p deps && cd deps
-        wget https://ci.magnum.graphics/${{ env.ZLIB_LIBRARY }}-${{ matrix.os }}.zip
-        unzip ${{ env.ZLIB_LIBRARY }}-${{ matrix.os }}.zip
+        wget https://ci.magnum.graphics/${{ matrix.env.ZLIB_LIBRARY }}-${{ matrix.os }}.zip
+        unzip ${{ matrix.env.ZLIB_LIBRARY }}-${{ matrix.os }}.zip
     - name: Clone libspng
       uses: actions/checkout@v3
       with:
