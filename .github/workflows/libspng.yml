@@ -8,7 +8,11 @@ env:
   # actually used anywhere BUT INSTEAD THE VERSION IS DUPLICATED, F.F.S.
   # ZLIB_VERSION: 1.2.13
   # ZLIBNG_VERSION: 2.0.7
-  LIBSPNG_VERSION: 0.7.3
+
+  # Version 0.7.3 suffers from https://github.com/randy408/libspng/pull/245
+  # which makes the static-only build impossible, using 0.7.2 until a new
+  # version is tagged.
+  LIBSPNG_VERSION: 0.7.2
 
 jobs:
   windows:
