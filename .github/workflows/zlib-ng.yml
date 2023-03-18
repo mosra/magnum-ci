@@ -1,0 +1,118 @@
+name: zlib-ng
+
+on: [push, pull_request]
+
+env:
+  ZLIBNG_VERSION: 2.0.7
+
+jobs:
+  windows:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-2019]
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Set up Visual Studio environment
+      uses: seanmiddleditch/gha-setup-vsdevenv@master
+    - name: Clone zlib
+      uses: actions/checkout@v3
+      with:
+        repository: zlib-ng/zlib-ng
+        ref: ${{ env.ZLIBNG_VERSION }}
+        path: zlib-ng
+    - name: Build & install
+      shell: cmd
+      run: |
+        cmake ^
+          -DCMAKE_C_COMPILER=cl.exe ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DZLIB_ENABLE_TESTS=OFF ^
+          -DZLIBNG_ENABLE_TESTS=OFF ^
+          -DWITH_GTEST=OFF ^
+          -DZLIB_COMPAT=ON ^
+          -DZLIB_SYMBOL_PREFIX=zng_ ^
+          -DBUILD_SHARED_LIBS=OFF ^
+          -DSKIP_INSTALL_FILES=ON ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
+          -G Ninja -S zlib-ng -B zlib-ng-build
+        ninja -C zlib-ng-build install
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: zlib-ng-${{ env.ZLIBNG_VERSION }}-${{ matrix.os }}
+        path: install
+
+  windows-mingw:
+    name: windows-mingw
+    runs-on: windows-2019
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Set up MinGW environment
+      uses: msys2/setup-msys2@v2
+    - name: Clone zlib
+      uses: actions/checkout@v3
+      with:
+        repository: zlib-ng/zlib-ng
+        ref: ${{ env.ZLIBNG_VERSION }}
+        path: zlib-ng
+    - name: Build & install
+      shell: cmd
+      run: |
+        cmake ^
+          -DCMAKE_C_COMPILER=gcc.exe ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DZLIB_ENABLE_TESTS=OFF ^
+          -DZLIBNG_ENABLE_TESTS=OFF ^
+          -DWITH_GTEST=OFF ^
+          -DZLIB_COMPAT=ON ^
+          -DZLIB_SYMBOL_PREFIX=zng_ ^
+          -DBUILD_SHARED_LIBS=OFF ^
+          -DSKIP_INSTALL_FILES=ON ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
+          -G Ninja -S zlib-ng -B zlib-ng-build
+        ninja -C zlib-ng-build install/strip
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: zlib-ng-${{ env.ZLIBNG_VERSION }}-windows-mingw
+        path: install
+
+  ubuntu:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-18.04]
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Clone zlib
+      uses: actions/checkout@v3
+      with:
+        repository: zlib-ng/zlib-ng
+        ref: ${{ env.ZLIBNG_VERSION }}
+        path: zlib-ng
+    - name: Build & install
+      run: |
+        cmake \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DZLIB_ENABLE_TESTS=OFF \
+          -DZLIBNG_ENABLE_TESTS=OFF \
+          -DWITH_GTEST=OFF \
+          -DZLIB_COMPAT=ON \
+          -DZLIB_SYMBOL_PREFIX=zng_ \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DSKIP_INSTALL_FILES=ON \
+          -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+          -G Ninja -S zlib-ng -B zlib-ng-build
+        ninja -C zlib-ng-build install/strip
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: zlib-ng-${{ env.ZLIBNG_VERSION }}-${{ matrix.os }}
+        path: install
