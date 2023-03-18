@@ -1,0 +1,161 @@
+name: libspng
+
+on: [push, pull_request]
+
+env:
+  ZLIBNG_VERSION: 2.0.7
+  ZLIB_VERSION: 1.2.13
+  LIBSPNG_VERSION: 0.7.3
+
+jobs:
+  windows:
+    name: ${{ matrix.os }}${{ matrix.env.SUFFIX }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+        - os: windows-2019
+          env:
+            ZLIB_LIBRARY: zlib-${{ env.ZLIB_VERSION }}
+            SUFFIX:
+        - os: windows-2019
+          env:
+            ZLIB_LIBRARY: zlibng-${{ env.ZLIBNG_VERSION }}
+            SUFFIX: -zng
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Set up Visual Studio environment
+      uses: seanmiddleditch/gha-setup-vsdevenv@master
+    - name: Fetch prebuilt zlib${{ matrix.env.SUFFIX }}
+      run: |
+        mkdir deps
+        cd deps
+        Invoke-WebRequest https://ci.magnum.graphics/${{ env.ZLIB_LIBRARY }}-${{ matrix.os }}.zip -O zlib.zip
+        unzip zlib.zip
+    - name: Clone libspng
+      uses: actions/checkout@v3
+      with:
+        repository: randy408/libspng
+        ref: v${{ env.LIBSPNG_VERSION }}
+        path: libspng
+    - name: Build & install
+      shell: cmd
+      run: |
+        cmake ^
+          -DCMAKE_C_COMPILER=cl.exe ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DCMAKE_PREFIX_PATH=%CD:\=/%/deps ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
+          -DSPNG_SHARED=OFF ^
+          -DBUILD_EXAMPLES=OFF ^
+          -G Ninja -S libspng -B libspng-build
+        ninja -C libspng-build install
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: libspng-${{ env.LIBSPNG_VERSION }}-${{ matrix.os }}${{ matrix.env.SUFFIX }}
+        path: install
+
+  windows-mingw:
+    name: windows-mingw${{ matrix.env.SUFFIX }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+        - os: windows-2019
+          env:
+            ZLIB_LIBRARY: zlib-${{ env.ZLIB_VERSION }}
+            SUFFIX:
+        - os: windows-2019
+          env:
+            ZLIB_LIBRARY: zlibng-${{ env.ZLIBNG_VERSION }}
+            SUFFIX: -zng
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Set up MinGW environment
+      uses: msys2/setup-msys2@v2
+    - name: Fetch prebuilt zlib${{ matrix.env.SUFFIX }}
+      run: |
+        mkdir deps
+        cd deps
+        Invoke-WebRequest https://ci.magnum.graphics/${{ env.ZLIB_LIBRARY }}-windows-mingw.zip -O zlib.zip
+        unzip zlib.zip
+    - name: Clone libspng
+      uses: actions/checkout@v3
+      with:
+        repository: randy408/libspng
+        ref: v${{ env.LIBSPNG_VERSION }}
+        path: libspng
+    - name: Build & install
+      shell: cmd
+      run: |
+        cmake ^
+          -DCMAKE_C_COMPILER=gcc.exe ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DCMAKE_PREFIX_PATH=%CD:\=/%/deps ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
+          -DSPNG_SHARED=OFF ^
+          -DBUILD_EXAMPLES=OFF ^
+          -G Ninja -S libspng -B libspng-build
+        ninja -C libspng-build install/strip
+    - name: Remove pkgconfig cruft
+      shell: cmd
+      run: |
+        cd install/lib
+        del pkgconfig /s /q
+        rmdir pkgconfig /s /q
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: libspng-${{ env.LIBSPNG_VERSION }}-windows-mingw${{ matrix.env.SUFFIX }}
+        path: install
+
+  ubuntu:
+    name: ${{ matrix.os }}${{ matrix.env.SUFFIX }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+        - os: ubuntu-18.04
+          env:
+            ZLIB_LIBRARY: zlib-${{ env.ZLIB_VERSION }}
+            SUFFIX:
+        - os: ubuntu-18.04
+          env:
+            ZLIB_LIBRARY: zlibng-${{ env.ZLIBNG_VERSION }}
+            SUFFIX: -zng
+    steps:
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Fetch prebuilt zlib${{ matrix.env.SUFFIX }}
+      run: |
+        mkdir -p deps && cd deps
+        wget https://ci.magnum.graphics/${{ env.ZLIB_LIBRARY }}-${{ matrix.os }}.zip
+        unzip ${{ env.ZLIB_LIBRARY }}-${{ matrix.os }}.zip
+    - name: Clone libspng
+      uses: actions/checkout@v3
+      with:
+        repository: randy408/libspng
+        ref: v${{ env.LIBSPNG_VERSION }}
+        path: libspng
+    - name: Build & install
+      run: |
+        cmake \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_PREFIX_PATH=$(pwd)/deps \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -DSPNG_SHARED=OFF \
+          -DBUILD_EXAMPLES=OFF \
+          -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+          -G Ninja -S libspng -B libspng-build
+        ninja -C libspng-build install/strip
+    - name: Remove pkgconfig cruft
+      run: |
+        rm -r install/lib/pkgconfig
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: libspng-${{ env.LIBSPNG_VERSION }}-${{ matrix.os }}${{ matrix.env.SUFFIX }}
+        path: install
