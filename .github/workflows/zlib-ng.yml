@@ -83,13 +83,20 @@ jobs:
 
   ubuntu:
     name: ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runs-on }}
+    container: ${{ matrix.container }}
     strategy:
       matrix:
-        os: [ubuntu-18.04]
+        include:
+        - os: ubuntu-18.04
+          runs-on: ubuntu-latest
+          container: ubuntu:bionic-20220427
     steps:
-    - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Install base build tools
+      # apt update is needed to fetch package lists
+      run: |
+        apt update
+        apt install -y wget unzip ninja-build cmake g++
     - name: Clone zlib
       uses: actions/checkout@v3
       with:
@@ -98,19 +105,20 @@ jobs:
         path: zlib-ng
     - name: Build & install
       run: |
-        cmake \
+        mkdir zlib-ng-build && cd zlib-ng-build
+        cmake ../zlib-ng \
           -DCMAKE_BUILD_TYPE=Release \
           -DZLIB_ENABLE_TESTS=OFF \
           -DZLIBNG_ENABLE_TESTS=OFF \
           -DWITH_GTEST=OFF \
           -DZLIB_COMPAT=ON \
           -DZLIB_SYMBOL_PREFIX=zng_ \
-          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
           -DBUILD_SHARED_LIBS=OFF \
           -DSKIP_INSTALL_FILES=ON \
           -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-          -G Ninja -S zlib-ng -B zlib-ng-build
-        ninja -C zlib-ng-build install/strip
+          -G Ninja
+        ninja install/strip
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
       with:
