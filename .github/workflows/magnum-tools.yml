@@ -9,9 +9,13 @@ env:
   SDL_VERSION: 2.0.20
   PYBIND_VERSION: 2.9.2
   ZLIB_VERSION: 1.2.13
+  # 2.0.7 is the latest release, but we need name mangling support which isn't
+  # in any stable release yet even though being added in Oct 2021
+  ZLIBNG_VERSION: 2.0.4-579-gbfde
   PNG_VERSION: 1.6.39
   JPEG_VERSION: 2.1.4
   OPENEXR_VERSION: 3.1.5
+  SPNG_VERSION: 0.7.2
   WEBP_VERSION: 1.2.4
 
 jobs:
@@ -138,6 +142,22 @@ jobs:
         cd deps
         wget https://ci.magnum.graphics/libwebp-${{ env.WEBP_VERSION }}-${{ matrix.os }}.zip
         unzip libwebp-${{ env.WEBP_VERSION }}-${{ matrix.os }}.zip
+    - name: Fetch prebuilt zlib-ng
+      # This is extracted ínto a subdirectory as it conflicts with zlib and is
+      # nastily patched into FindSpng
+      # TODO handle better (needs patches in libspng itself to remember if
+      #   zlib-ng got used)
+      run: |
+        mkdir deps/zng && cd deps/zng
+        wget https://ci.magnum.graphics/zlib-ng-${{ env.ZLIBNG_VERSION }}-${{ matrix.os }}.zip
+        unzip zlib-ng-${{ env.ZLIBNG_VERSION }}-${{ matrix.os }}.zip
+        cd ../..
+        sed -i "s^INTERFACE_LINK_LIBRARIES ZLIB::ZLIB)^INTERFACE_LINK_LIBRARIES $(pwd)/deps/zng/lib/libz.a)^" magnum-plugins/modules/FindSpng.cmake
+    - name: Fetch prebuilt libspng
+      run: |
+        cd deps
+        wget https://ci.magnum.graphics/libspng-${{ env.SPNG_VERSION }}-${{ matrix.os }}-zng.zip
+        unzip libspng-${{ env.SPNG_VERSION }}-${{ matrix.os }}-zng.zip
     - name: Fetch Basis Universal sources
       run: |
         mkdir basis-universal && cd basis-universal
@@ -228,6 +248,7 @@ jobs:
           -DMAGNUM_WITH_PNGIMPORTER=ON \
           -DMAGNUM_WITH_PRIMITIVEIMPORTER=ON \
           -DMAGNUM_WITH_SPIRVTOOLSSHADERCONVERTER=OFF \
+          -DMAGNUM_WITH_SPNGIMPORTER=ON \
           -DMAGNUM_WITH_STANFORDIMPORTER=ON \
           -DMAGNUM_WITH_STANFORDSCENECONVERTER=ON \
           -DMAGNUM_WITH_STBDXTIMAGECONVERTER=ON \
