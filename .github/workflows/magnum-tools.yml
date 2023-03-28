@@ -17,13 +17,48 @@ env:
 jobs:
   ubuntu:
     name: ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runs-on }}
+    container: ${{ matrix.container }}
     strategy:
       matrix:
-        os: [ubuntu-18.04]
+        include:
+        - os: ubuntu-18.04
+          runs-on: ubuntu-latest
+          container: ubuntu:bionic-20220427
     steps:
-    - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@v3
+    - name: Install base build tools, OpenGL and Vulkan
+      # apt update is needed to fetch package lists; software-properties-common
+      # is the add-apt-repository command (why that isn't included by
+      # default?!); tzdata is then needed by the python PPA
+      run: |
+        apt update
+        apt install -y libgl1-mesa-dev libvulkan-dev wget unzip chrpath ninja-build cmake g++ software-properties-common
+        # Installing the tzdata package ASKS FOR TIMEZONE IN THE CONSOLE?! WHO
+        # DESIGNED THIS CRAP?! https://stackoverflow.com/a/58264927
+        DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata
+        mkdir -p deps
+    - name: Install a newer Git version from a PPA
+      # The actions/checkout FOR SOME REASON requires Git 2.18+, while 18.04
+      # ships only with 2.17. Ultimately that means the "clones" are not
+      # actually clones, so I can't fetch version info.
+      run: |
+        add-apt-repository ppa:git-core/ppa
+        apt update
+        apt install -y git
+    - name: Install Python versions from the deadsnakes PPA
+      # I don't need any venv stuff nor pip, but setuptools (for installing the
+      # bindings package) isn't included by default so I have to install it via
+      # pip, however pip isn't included by default either so I have to
+      # bootstrap it via ensurepip, and ensurepip isn't included by default
+      # EITHER, only in the venv package. Then, ensurepip *magically* makes
+      # setuptools available although that's not really documented anywhere.
+      # What a system, wow.
+      run: |
+        add-apt-repository ppa:deadsnakes/ppa
+        apt update
+        apt install -y python3.9 python3.9-dev python3.9-venv python3.10 python3.10-dev python3.10-venv
+        python3.10 -m ensurepip --altinstall
+        python3.9 -m ensurepip --altinstall
     - name: Clone Corrade
       uses: actions/checkout@v3
       with:
@@ -59,10 +94,6 @@ jobs:
         path: magnum-bindings
         # Needed for tags :(
         fetch-depth: 0
-    - name: Install OpenGL and Vulkan, other tools
-      run: |
-        sudo apt install -y libgl1-mesa-dev libvulkan-dev wget unzip chrpath
-        mkdir -p deps
     - name: Fetch Pybind11
       run: |
         wget --no-clobber https://github.com/pybind/pybind11/archive/v${{ env.PYBIND_VERSION }}.tar.gz
@@ -114,22 +145,24 @@ jobs:
         tar --strip-components 1 -xzf ${{ env.BASIS_VERSION }}.tar.gz
     - name: Build & install Corrade
       run: |
-        cmake \
+        mkdir corrade-build && cd corrade-build
+        cmake ../corrade \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
           `# https://cmake.org/cmake/help/latest/policy/CMP0095.html` \
           -DCMAKE_INSTALL_RPATH="\\\${ORIGIN}/../lib" \
           -DCORRADE_BUILD_DEPRECATED=OFF \
           -DCORRADE_WITH_TESTSUITE=OFF \
           -DCORRADE_WITH_INTERCONNECT=ON \
-          -G Ninja -S corrade -B corrade-build
-        ninja -C corrade-build install/strip
+          -G Ninja
+        ninja install/strip
     - name: Build & install Magnum
       run: |
-        cmake \
+        mkdir magnum-build && cd magnum-build
+        cmake ../magnum \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
-          -DCMAKE_PREFIX_PATH=$(pwd)/deps \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
+          -DCMAKE_PREFIX_PATH=$(pwd)/../deps \
           `# https://cmake.org/cmake/help/latest/policy/CMP0095.html` \
           -DCMAKE_INSTALL_RPATH="\\\${ORIGIN}/../lib" \
           -DMAGNUM_BUILD_DEPRECATED=OFF \
@@ -160,18 +193,19 @@ jobs:
           -DMAGNUM_WITH_OBJIMPORTER=OFF \
           -DMAGNUM_WITH_TGAIMAGECONVERTER=ON \
           -DMAGNUM_WITH_TGAIMPORTER=ON \
-          -G Ninja -S magnum -B magnum-build
-        ninja -C magnum-build install/strip
+          -G Ninja
+        ninja install/strip
     - name: Build & install Magnum Plugins
       run: |
-        cmake \
+        mkdir magnum-plugins-build && cd magnum-plugins-build
+        cmake ../magnum-plugins \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
-          -DCMAKE_PREFIX_PATH=$(pwd)/deps \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
+          -DCMAKE_PREFIX_PATH=$(pwd)/../deps \
           `# https://cmake.org/cmake/help/latest/policy/CMP0095.html` \
           `# plugins also need to look up to lib/ from lib/magnum/<interface>/` \
           -DCMAKE_INSTALL_RPATH="\\\${ORIGIN}/../lib;\\\${ORIGIN}/../.." \
-          -DBASIS_UNIVERSAL_DIR=$(pwd)/basis-universal \
+          -DBASIS_UNIVERSAL_DIR=$(pwd)/../basis-universal \
           -DMAGNUM_WITH_ASSIMPIMPORTER=ON \
           -DMAGNUM_WITH_ASTCIMPORTER=ON \
           -DMAGNUM_WITH_BASISIMAGECONVERTER=ON \
@@ -204,111 +238,106 @@ jobs:
           -DMAGNUM_WITH_STLIMPORTER=ON \
           -DMAGNUM_WITH_UFBXIMPORTER=ON \
           -DMAGNUM_WITH_WEBPIMPORTER=ON \
-          -G Ninja -S magnum-plugins -B magnum-plugins-build
-        ninja -C magnum-plugins-build install/strip
+          -G Ninja
+        ninja install/strip
         # Copy also the useful gltf<->glb Python scripts
-        install magnum-plugins/src/MagnumPlugins/GltfImporter/Test/glb2gltf.py $(pwd)/install/bin
-        install magnum-plugins/src/MagnumPlugins/GltfImporter/Test/gltf2glb.py $(pwd)/install/bin
+        install ../magnum-plugins/src/MagnumPlugins/GltfImporter/Test/glb2gltf.py $(pwd)/../install/bin
+        install ../magnum-plugins/src/MagnumPlugins/GltfImporter/Test/gltf2glb.py $(pwd)/../install/bin
     - name: Build & install Magnum Extras
       run: |
-        cmake \
+        mkdir magnum-extras-build && cd magnum-extras-build
+        cmake ../magnum-extras \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
-          -DCMAKE_PREFIX_PATH=$(pwd)/deps \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
+          -DCMAKE_PREFIX_PATH=$(pwd)/../deps \
           `# https://cmake.org/cmake/help/latest/policy/CMP0095.html` \
           -DCMAKE_INSTALL_RPATH="\\\${ORIGIN}/../lib" \
           -DMAGNUM_WITH_PLAYER=ON \
-          -G Ninja -S magnum-extras -B magnum-extras-build
-        ninja -C magnum-extras-build install/strip
-    - name: Setup Python 3.10
-      uses: actions/setup-python@v3
-      with:
-        python-version: '3.10'
+          -G Ninja
+        ninja install/strip
     - name: Install Pybind11 for Python 3.10
       run: |
-        cmake \
+        mkdir pybind-build-10 && cd pybind-build-10
+        cmake ../pybind11-${{ env.PYBIND_VERSION }} \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=$(pwd)/deps-10 \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/../deps-10 \
           -DPYBIND11_PYTHON_VERSION=3.10 \
           -DPYBIND11_TEST=OFF \
-          -G Ninja -S pybind11-${{ env.PYBIND_VERSION }} -B pybind-build-10
-        ninja -C pybind-build-10 install/strip
+          -G Ninja
+        ninja install/strip
     - name: Build & install Magnum Bindings for Python 3.10
       run: |
-        cmake \
+        mkdir magnum-bindings-build-10 && cd magnum-bindings-build-10
+        cmake ../magnum-bindings \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
-          -DCMAKE_PREFIX_PATH="$(pwd)/deps;$(pwd)/deps-10" \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
+          -DCMAKE_PREFIX_PATH="$(pwd)/../deps;$(pwd)/../deps-10" \
           `# https://cmake.org/cmake/help/latest/policy/CMP0095.html` \
           `# no install here (setuptools does), so no CMAKE_INSTALL_RPATH,` \
           `# which also means we don't need to over-escape anything` \
           -DCMAKE_BUILD_RPATH="\${ORIGIN}/../lib" \
           -DPYBIND11_PYTHON_VERSION=3.10 \
           -DMAGNUM_WITH_PYTHON=ON \
-          -G Ninja -S magnum-bindings -B magnum-bindings-build-10
+          -G Ninja
         # We install just the version header here, the rest is done by setup.py
-        ninja -C magnum-bindings-build-10 install/strip
-        cd magnum-bindings-build-10/src/python
+        ninja install/strip
+        cd src/python
         python3.10 setup.py install --install-lib=python --root="$(pwd)/../../../install"
-    - name: Setup Python 3.9
-      uses: actions/setup-python@v3
-      with:
-        python-version: '3.9'
     - name: Install Pybind11 for Python 3.9
       run: |
-        cmake \
+        mkdir pybind-build-9 && cd pybind-build-9
+        cmake ../pybind11-${{ env.PYBIND_VERSION }} \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=$(pwd)/deps-9 \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/../deps-9 \
           -DPYBIND11_PYTHON_VERSION=3.9 \
           -DPYBIND11_TEST=OFF \
-          -G Ninja -S pybind11-${{ env.PYBIND_VERSION }} -B pybind-build-9
-        ninja -C pybind-build-9 install/strip
+          -G Ninja
+        ninja install/strip
     - name: Build & install Magnum Bindings for Python 3.9
       run: |
-        cmake \
+        mkdir magnum-bindings-build-9 && cd magnum-bindings-build-9
+        cmake ../magnum-bindings \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
-          -DCMAKE_PREFIX_PATH="$(pwd)/deps;$(pwd)/deps-9" \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
+          -DCMAKE_PREFIX_PATH="$(pwd)/../deps;$(pwd)/../deps-9" \
           `# https://cmake.org/cmake/help/latest/policy/CMP0095.html` \
           `# no install here (setuptools does), so no CMAKE_INSTALL_RPATH,` \
           `# which also means we don't need to over-escape anything` \
           -DCMAKE_BUILD_RPATH="\${ORIGIN}/../lib" \
           -DPYBIND11_PYTHON_VERSION=3.9 \
           -DMAGNUM_WITH_PYTHON=ON \
-          -G Ninja -S magnum-bindings -B magnum-bindings-build-9
+          -G Ninja
         # We install just the version header here, the rest is done by setup.py
-        ninja -C magnum-bindings-build-9 install/strip
-        cd magnum-bindings-build-9/src/python
+        ninja install/strip
+        cd src/python
         python3.9 setup.py install --install-lib=python --root="$(pwd)/../../../install"
-    # - name: Setup Python 3.8
-    #   uses: actions/setup-python@v3
-    #   with:
-    #     python-version: '3.8'
     # - name: Install Pybind11 for Python 3.8
     #   run: |
-    #     cmake \
+    #     mkdir pybind-build-8 && cd pybind-build-8
+    #     cmake ../pybind11-${{ env.PYBIND_VERSION }} \
     #       -DCMAKE_BUILD_TYPE=Release \
-    #       -DCMAKE_INSTALL_PREFIX=$(pwd)/deps-8 \
+    #       -DCMAKE_INSTALL_PREFIX=$(pwd)/../deps-8 \
     #       -DPYBIND11_PYTHON_VERSION=3.8 \
     #       -DPYBIND11_TEST=OFF \
-    #       -G Ninja -S pybind11-${{ env.PYBIND_VERSION }} -B pybind-build-8
-    #     ninja -C pybind-build-8 install/strip
+    #       -G Ninja
+    #     ninja install/strip
     # - name: Build & install Magnum Bindings for Python 3.8
     #   run: |
-    #     cmake \
+    #     mkdir magnum-bindings-build-8 && cd magnum-bindings-build-8
+    #     cmake ../magnum-bindings \
     #       -DCMAKE_BUILD_TYPE=Release \
     #       -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
-    #       -DCMAKE_PREFIX_PATH="$(pwd)/deps;$(pwd)/deps-8" \
+    #       -DCMAKE_PREFIX_PATH="$(pwd)/../deps;$(pwd)/../deps-8" \
     #       `# https://cmake.org/cmake/help/latest/policy/CMP0095.html` \
     #       `# no install here (setuptools does), so no CMAKE_INSTALL_RPATH,` \
     #       `# which also means we don't need to over-escape anything` \
     #       -DCMAKE_BUILD_RPATH="\${ORIGIN}/../lib" \
     #       -DPYBIND11_PYTHON_VERSION=3.8 \
     #       -DMAGNUM_WITH_PYTHON=ON \
-    #       -G Ninja -S magnum-bindings -B magnum-bindings-build-8
+    #       -G Ninja
     #     # We install just the version header here, the rest is done by setup.py
-    #     ninja -C magnum-bindings-build-8 install/strip
-    #     cd magnum-bindings-build-8/src/python
+    #     ninja -C install/strip
+    #     cd src/python
     #     python3.8 setup.py install --install-lib=python --root="$(pwd)/../../../install"
     - name: Patch RPATH in nested Magnum Bindings modules
       run: |
@@ -350,6 +379,9 @@ jobs:
         # TODO can this be just not made at all?
         rm -r install/python/*.egg-info
     - name: Collect version info
+      # Without this it uses dash?! GITHUB ACTIONS WHY DO YOU SAY YOU PREFER
+      # BASH BY DEFAULT IF IT'S NOT TRUE?!
+      shell: bash
       # the tag name is included only for Corrade, then the others have just N
       # and a short hash (4 instead of 8 numbers, or at least as much to have
       # the hash unique)
