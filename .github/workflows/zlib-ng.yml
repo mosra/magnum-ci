@@ -3,7 +3,9 @@ name: zlib-ng
 on: [push, pull_request]
 
 env:
-  ZLIBNG_VERSION: 2.0.7
+  # 2.0.7 is the latest release, but we need name mangling support which isn't
+  # in any stable release yet even though being added in Oct 2021
+  ZLIBNG_VERSION: bfde4b91ee675a82c0ef64c6f30c1bbe7546a64d
 
 jobs:
   windows:
@@ -23,6 +25,8 @@ jobs:
         repository: zlib-ng/zlib-ng
         ref: ${{ env.ZLIBNG_VERSION }}
         path: zlib-ng
+        # Needed for tags :(
+        fetch-depth: 0
     - name: Build & install
       shell: cmd
       run: |
@@ -39,10 +43,16 @@ jobs:
           -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
           -G Ninja -S zlib-ng -B zlib-ng-build
         ninja -C zlib-ng-build install
+    - name: Collect better version info
+      shell: bash
+      run: |
+        cd zlib-ng
+        VERSION=$(git describe --match "2.*" --abbrev=4 --tags)
+        echo "ZLIBNG_SHORT_VERSION=$VERSION" >> $GITHUB_ENV
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
       with:
-        name: zlib-ng-${{ env.ZLIBNG_VERSION }}-${{ matrix.os }}
+        name: zlib-ng-${{ env.ZLIBNG_SHORT_VERSION }}-${{ matrix.os }}
         path: install
 
   windows-mingw:
@@ -59,6 +69,8 @@ jobs:
         repository: zlib-ng/zlib-ng
         ref: ${{ env.ZLIBNG_VERSION }}
         path: zlib-ng
+        # Needed for tags :(
+        fetch-depth: 0
     - name: Build & install
       shell: cmd
       run: |
@@ -75,10 +87,16 @@ jobs:
           -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
           -G Ninja -S zlib-ng -B zlib-ng-build
         ninja -C zlib-ng-build install/strip
+    - name: Collect better version info
+      shell: bash
+      run: |
+        cd zlib-ng
+        VERSION=$(git describe --match "2.*" --abbrev=4 --tags)
+        echo "ZLIBNG_SHORT_VERSION=$VERSION" >> $GITHUB_ENV
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
       with:
-        name: zlib-ng-${{ env.ZLIBNG_VERSION }}-windows-mingw
+        name: zlib-ng-${{ env.ZLIBNG_SHORT_VERSION }}-windows-mingw
         path: install
 
   ubuntu:
@@ -93,16 +111,28 @@ jobs:
           container: ubuntu:bionic-20220427
     steps:
     - name: Install base build tools
-      # apt update is needed to fetch package lists
+      # apt update is needed to fetch package lists; software-properties-common
+      # is the add-apt-repository command (why that isn't included by
+      # default?!)
       run: |
         apt update
-        apt install -y wget unzip ninja-build cmake g++
+        apt install -y wget unzip ninja-build cmake g++ software-properties-common
+    - name: Install a newer Git version from a PPA
+      # The actions/checkout FOR SOME REASON requires Git 2.18+, while 18.04
+      # ships only with 2.17. Ultimately that means the "clones" are not
+      # actually clones, so I can't fetch version info.
+      run: |
+        add-apt-repository ppa:git-core/ppa
+        apt update
+        apt install -y git
     - name: Clone zlib
       uses: actions/checkout@v3
       with:
         repository: zlib-ng/zlib-ng
         ref: ${{ env.ZLIBNG_VERSION }}
         path: zlib-ng
+        # Needed for tags :(
+        fetch-depth: 0
     - name: Build & install
       run: |
         mkdir zlib-ng-build && cd zlib-ng-build
@@ -119,8 +149,16 @@ jobs:
           -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
           -G Ninja
         ninja install/strip
+    - name: Collect better version info
+      # Without this it uses dash?! GITHUB ACTIONS WHY DO YOU SAY YOU PREFER
+      # BASH BY DEFAULT IF IT'S NOT TRUE?!
+      shell: bash
+      run: |
+        cd zlib-ng
+        VERSION=$(git describe --match "2.*" --abbrev=4 --tags)
+        echo "ZLIBNG_SHORT_VERSION=$VERSION" >> $GITHUB_ENV
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
       with:
-        name: zlib-ng-${{ env.ZLIBNG_VERSION }}-${{ matrix.os }}
+        name: zlib-ng-${{ env.ZLIBNG_SHORT_VERSION }}-${{ matrix.os }}
         path: install
