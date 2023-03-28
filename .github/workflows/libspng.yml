@@ -7,7 +7,7 @@ env:
   # referencing environment variables defined in outer scope, so these aren't
   # actually used anywhere BUT INSTEAD THE VERSION IS DUPLICATED, F.F.S.
   # ZLIB_VERSION: 1.2.13
-  # ZLIBNG_VERSION: 2.0.7
+  # ZLIBNG_VERSION: 2.0.4-579-gbfde
 
   # Version 0.7.3 suffers from https://github.com/randy408/libspng/pull/245
   # which makes the static-only build impossible, using 0.7.2 until a new
@@ -29,7 +29,7 @@ jobs:
         - os: windows-2019
           env:
             # SAME, FUCK
-            ZLIB_LIBRARY: zlib-ng-2.0.7
+            ZLIB_LIBRARY: zlib-ng-2.0.4-579-gbfde
             SUFFIX: -zng
     steps:
     - name: Install Ninja
@@ -80,7 +80,7 @@ jobs:
         - os: windows-2019
           env:
             # SAME, FUCK
-            ZLIB_LIBRARY: zlib-ng-2.0.7
+            ZLIB_LIBRARY: zlib-ng-2.0.4-579-gbfde
             SUFFIX: -zng
     steps:
     - name: Install Ninja
@@ -142,7 +142,7 @@ jobs:
           container: ubuntu:bionic-20220427
           env:
             # SAME, FUCK
-            ZLIB_LIBRARY: zlib-ng-2.0.7
+            ZLIB_LIBRARY: zlib-ng-2.0.4-579-gbfde
             SUFFIX: -zng
     steps:
     - name: Install base build tools
