@@ -125,26 +125,35 @@ jobs:
 
   ubuntu:
     name: ${{ matrix.os }}${{ matrix.env.SUFFIX }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runs-on }}
+    container: ${{ matrix.container }}
     strategy:
       matrix:
         include:
         - os: ubuntu-18.04
+          runs-on: ubuntu-latest
+          container: ubuntu:bionic-20220427
           env:
             # THIS STUPID CRAP CAN NOT DO `zlib-${{ env.ZLIB_VERSION }}`, FUCK
             ZLIB_LIBRARY: zlib-1.2.13
             SUFFIX:
         - os: ubuntu-18.04
+          runs-on: ubuntu-latest
+          container: ubuntu:bionic-20220427
           env:
             # SAME, FUCK
             ZLIB_LIBRARY: zlib-ng-2.0.7
             SUFFIX: -zng
     steps:
-    - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Install base build tools
+      # apt update is needed to fetch package lists
+      run: |
+        apt update
+        apt install -y wget unzip ninja-build cmake g++
+        mkdir -p deps
     - name: Fetch prebuilt zlib${{ matrix.env.SUFFIX }}
       run: |
-        mkdir -p deps && cd deps
+        cd deps
         wget https://ci.magnum.graphics/${{ matrix.env.ZLIB_LIBRARY }}-${{ matrix.os }}.zip
         unzip ${{ matrix.env.ZLIB_LIBRARY }}-${{ matrix.os }}.zip
     - name: Clone libspng
@@ -155,15 +164,16 @@ jobs:
         path: libspng
     - name: Build & install
       run: |
-        cmake \
+        mkdir libspng-build && cd libspng-build
+        cmake ../libspng \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_PREFIX_PATH=$(pwd)/deps \
-          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -DCMAKE_PREFIX_PATH=$(pwd)/../deps \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
           -DSPNG_SHARED=OFF \
           -DBUILD_EXAMPLES=OFF \
           -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-          -G Ninja -S libspng -B libspng-build
-        ninja -C libspng-build install/strip
+          -G Ninja
+        ninja install/strip
     - name: Remove pkgconfig cruft
       run: |
         rm -r install/lib/pkgconfig
