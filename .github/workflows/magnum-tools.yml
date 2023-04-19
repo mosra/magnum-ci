@@ -434,3 +434,255 @@ jobs:
       with:
         name: magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ env.MAGNUM_BINDINGS_VERSION }}-linux-x64
         path: magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ env.MAGNUM_BINDINGS_VERSION }}-linux-x64.tar
+
+  windows:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+        - os: windows-2019
+    steps:
+    - name: Base setup
+      run: |
+        mkdir deps
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@v3
+    - name: Set up Visual Studio environment
+      uses: seanmiddleditch/gha-setup-vsdevenv@v3
+    - name: Clone Corrade
+      uses: actions/checkout@v3
+      with:
+        repository: mosra/corrade
+        path: corrade
+        # Needed for tags :(
+        fetch-depth: 0
+    - name: Clone Magnum
+      uses: actions/checkout@v3
+      with:
+        repository: mosra/magnum
+        path: magnum
+        # Needed for tags :(
+        fetch-depth: 0
+    - name: Clone Magnum Plugins
+      uses: actions/checkout@v3
+      with:
+        repository: mosra/magnum-plugins
+        path: magnum-plugins
+        # Needed for tags :(
+        fetch-depth: 0
+    - name: Clone Magnum Extras
+      uses: actions/checkout@v3
+      with:
+        repository: mosra/magnum-extras
+        path: magnum-extras
+        # Needed for tags :(
+        fetch-depth: 0
+    - name: Clone Magnum Bindings
+      uses: actions/checkout@v3
+      with:
+        repository: mosra/magnum-bindings
+        path: magnum-bindings
+        # Needed for tags :(
+        fetch-depth: 0
+    - name: Fetch Pybind11
+      run: |
+        Invoke-WebRequest https://github.com/pybind/pybind11/archive/v${{ env.PYBIND_VERSION }}.zip -O v${{ env.PYBIND_VERSION }}.zip
+        unzip v${{ env.PYBIND_VERSION }}.zip
+    - name: Fetch prebuilt SDL
+      run: |
+        Invoke-WebRequest http://www.libsdl.org/release/SDL2-devel-${{ env.SDL_VERSION }}-VC.zip -O SDL2-devel-${{ env.SDL_VERSION }}-VC.zip
+        unzip SDL2-devel-${{ env.SDL_VERSION }}-VC.zip
+        ren SDL2-${{ env.SDL_VERSION }} SDL
+    - name: Build & install Corrade
+      shell: cmd
+      run: |
+        cmake ^
+          -DCMAKE_CXX_COMPILER=cl.exe ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DCMAKE_PREFIX_PATH=%CD:\=/%/deps ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
+          -DCORRADE_BUILD_DEPRECATED=OFF ^
+          -DCORRADE_WITH_TESTSUITE=OFF ^
+          -DCORRADE_WITH_INTERCONNECT=ON ^
+          -G Ninja -S corrade -B corrade-build || exit /b
+        ninja -C corrade-build install || exit /b
+    - name: Build & install Magnum
+      shell: cmd
+      run: |
+        cmake ^
+          -DCMAKE_CXX_COMPILER=cl.exe ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DCMAKE_PREFIX_PATH="%CD:\=/%/deps;%CD:\=/%/SDL" ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
+          -DMAGNUM_BUILD_DEPRECATED=OFF ^
+          -DMAGNUM_WITH_AUDIO=OFF ^
+          -DMAGNUM_WITH_GL=ON ^
+          -DMAGNUM_WITH_DEBUGTOOLS=ON ^
+          -DMAGNUM_WITH_MESHTOOLS=ON ^
+          -DMAGNUM_WITH_PRIMITIVES=ON ^
+          -DMAGNUM_WITH_SCENEGRAPH=ON ^
+          -DMAGNUM_WITH_SCENETOOLS=ON ^
+          -DMAGNUM_WITH_SHADERS=ON ^
+          -DMAGNUM_WITH_SHADERTOOLS=ON ^
+          -DMAGNUM_WITH_TEXT=ON ^
+          -DMAGNUM_WITH_TEXTURETOOLS=ON ^
+          -DMAGNUM_WITH_TRADE=ON ^
+          -DMAGNUM_WITH_VK=OFF ^
+          -DMAGNUM_WITH_SDL2APPLICATION=ON ^
+          -DMAGNUM_WITH_GL_INFO=ON ^
+          -DMAGNUM_WITH_VK_INFO=OFF ^
+          -DMAGNUM_WITH_IMAGECONVERTER=ON ^
+          -DMAGNUM_WITH_SCENECONVERTER=ON ^
+          -DMAGNUM_WITH_SHADERCONVERTER=ON ^
+          -DMAGNUM_WITH_ANYIMAGECONVERTER=ON ^
+          -DMAGNUM_WITH_ANYIMAGEIMPORTER=ON ^
+          -DMAGNUM_WITH_ANYSCENECONVERTER=ON ^
+          -DMAGNUM_WITH_ANYSCENEIMPORTER=ON ^
+          -DMAGNUM_WITH_ANYSHADERCONVERTER=ON ^
+          -DMAGNUM_WITH_OBJIMPORTER=OFF ^
+          -DMAGNUM_WITH_TGAIMAGECONVERTER=ON ^
+          -DMAGNUM_WITH_TGAIMPORTER=ON ^
+          -G Ninja -S magnum -B magnum-build || exit /b
+        ninja -C magnum-build install || exit /b
+    - name: Build & install Magnum Plugins
+      shell: cmd
+      run: |
+        cmake ^
+          -DCMAKE_CXX_COMPILER=cl.exe ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DCMAKE_PREFIX_PATH=%CD:\=/%/deps ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
+          -DMAGNUM_WITH_ASSIMPIMPORTER=OFF ^
+          -DMAGNUM_WITH_ASTCIMPORTER=ON ^
+          -DMAGNUM_WITH_BASISIMAGECONVERTER=OFF ^
+          -DMAGNUM_WITH_BASISIMPORTER=OFF ^
+          -DMAGNUM_WITH_DDSIMPORTER=ON ^
+          -DMAGNUM_WITH_DEVILIMAGEIMPORTER=OFF ^
+          -DMAGNUM_WITH_GLSLANGSHADERCONVERTER=OFF ^
+          -DMAGNUM_WITH_GLTFIMPORTER=ON ^
+          -DMAGNUM_WITH_GLTFSCENECONVERTER=ON ^
+          -DMAGNUM_WITH_ICOIMPORTER=ON ^
+          -DMAGNUM_WITH_JPEGIMAGECONVERTER=OFF ^
+          -DMAGNUM_WITH_JPEGIMPORTER=OFF ^
+          -DMAGNUM_WITH_KTXIMAGECONVERTER=ON ^
+          -DMAGNUM_WITH_KTXIMPORTER=ON ^
+          -DMAGNUM_WITH_MESHOPTIMIZERSCENECONVERTER=OFF ^
+          -DMAGNUM_WITH_MINIEXRIMAGECONVERTER=ON ^
+          -DMAGNUM_WITH_OPENEXRIMAGECONVERTER=OFF ^
+          -DMAGNUM_WITH_OPENEXRIMPORTER=OFF ^
+          -DMAGNUM_WITH_PNGIMAGECONVERTER=OFF ^
+          -DMAGNUM_WITH_PNGIMPORTER=OFF ^
+          -DMAGNUM_WITH_PRIMITIVEIMPORTER=ON ^
+          -DMAGNUM_WITH_SPIRVTOOLSSHADERCONVERTER=OFF ^
+          -DMAGNUM_WITH_SPNGIMPORTER=OFF ^
+          -DMAGNUM_WITH_STANFORDIMPORTER=ON ^
+          -DMAGNUM_WITH_STANFORDSCENECONVERTER=ON ^
+          -DMAGNUM_WITH_STBDXTIMAGECONVERTER=ON ^
+          -DMAGNUM_WITH_STBIMAGECONVERTER=ON ^
+          -DMAGNUM_WITH_STBIMAGEIMPORTER=ON ^
+          -DMAGNUM_WITH_STBRESIZEIMAGECONVERTER=ON ^
+          -DMAGNUM_WITH_STBTRUETYPEFONT=ON ^
+          -DMAGNUM_WITH_STLIMPORTER=ON ^
+          -DMAGNUM_WITH_UFBXIMPORTER=ON ^
+          -DMAGNUM_WITH_WEBPIMPORTER=OFF ^
+          -G Ninja -S magnum-plugins -B magnum-plugins-build || exit /b
+        ninja -C magnum-plugins-build install || exit /b
+        rem Copy also the useful gltf<->glb Python scripts
+        copy magnum-plugins\src\MagnumPlugins\GltfImporter\Test\glb2gltf.py install\bin\glb2gltf.py || exit /b
+        copy magnum-plugins\src\MagnumPlugins\GltfImporter\Test\gltf2glb.py install\bin\gltf2glb.py || exit /b
+    - name: Build & install Magnum Extras
+      shell: cmd
+      run: |
+        cmake ^
+          -DCMAKE_CXX_COMPILER=cl.exe ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DCMAKE_PREFIX_PATH="%CD:\=/%/deps;%CD:\=/%/SDL" ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
+          -DMAGNUM_WITH_PLAYER=ON ^
+          -G Ninja -S magnum-extras -B magnum-extras-build || exit /b
+        ninja -C magnum-extras-build install || exit /b
+    - name: Setup Python 3.11
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.11'
+    - name: Install Pybind11 for Python 3.11
+      shell: cmd
+      run: |
+        cmake ^
+          -DCMAKE_C_COMPILER=cl.exe ^
+          -DCMAKE_CXX_COMPILER=cl.exe ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/deps-11 ^
+          -DPYBIND11_PYTHON_VERSION=3.11 ^
+          -DPYBIND11_TEST=OFF ^
+          -G Ninja -S pybind11-${{ env.PYBIND_VERSION }} -B pybind-build-11 || exit /b
+        ninja -C pybind-build-11 install || exit /b
+    - name: Build & install Magnum Bindings for Python 3.11
+      shell: cmd
+      run: |
+        cmake ^
+          -DCMAKE_CXX_COMPILER=cl.exe ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
+          -DCMAKE_PREFIX_PATH="%CD:\=/%/deps;%CD:\=/%/SDL;%CD:\=/%/deps-11" ^
+          -DPYBIND11_PYTHON_VERSION=3.11 ^
+          -DMAGNUM_WITH_PYTHON=ON ^
+          -G Ninja -S magnum-bindings -B magnum-bindings-build-11 || exit /b
+        rem We install just the version header here, the rest is done by setup.py
+        ninja -C magnum-bindings-build-11 install || exit /b
+        cd magnum-bindings-build-11/src/python || exit /b
+        python setup.py install --install-lib=python --root="%CD:\=/%/../../../install" || exit /b
+    - name: Copy over SDL DLL
+      shell: cmd
+      run: |
+        move SDL\lib\x64\SDL2.dll install\bin
+    - name: Remove includes, CMake modules, static libraries, corrade-rc, Python Egg Info
+      shell: cmd
+      run: |
+        rem Keep version info tho
+        move install\include\Corrade\version.h install\versionCorrade.h
+        move install\include\Magnum\version.h install\
+        move install\include\Magnum\versionPlugins.h install\
+        move install\include\Magnum\versionExtras.h install\
+        move install\include\Magnum\versionBindings.h install\
+        rmdir install\include /s /q
+        mkdir install\include
+        mkdir install\include\Corrade
+        move install\versionCorrade.h install\include\Corrade\version.h
+        mkdir install\include\Magnum
+        move install\version.h install\include\Magnum\
+        move install\versionPlugins.h install\include\Magnum\
+        move install\versionExtras.h install\include\Magnum\
+        move install\versionBindings.h install\include\Magnum\
+        rmdir install\share /s /q
+        rmdir install\lib /s /q
+        del install\bin\corrade-rc.exe
+        rem TODO can this be just not made at all?
+        rmdir install\python\magnum-0.0.0-py3.11.egg-info /s /q
+    - name: Collect version info
+      shell: bash
+      # the tag name is included only for Corrade, then the others have just N
+      # and a short hash (4 instead of 8 numbers, or at least as much to have
+      # the hash unique)
+      run: |
+        cd corrade
+        VERSION=$(git describe --match "v*" --abbrev=4)
+        echo "CORRADE_VERSION=$VERSION" >> $GITHUB_ENV
+        cd ../magnum
+        VERSION=$(git describe --match "v*" --abbrev=4)
+        echo "MAGNUM_VERSION=${VERSION:9}" >> $GITHUB_ENV
+        cd ../magnum-plugins
+        VERSION=$(git describe --match "v*" --abbrev=4)
+        echo "MAGNUM_PLUGINS_VERSION=${VERSION:9}" >> $GITHUB_ENV
+        cd ../magnum-extras
+        VERSION=$(git describe --match "v*" --abbrev=4)
+        echo "MAGNUM_EXTRAS_VERSION=${VERSION:9}" >> $GITHUB_ENV
+        cd ../magnum-bindings
+        VERSION=$(git describe --match "v*" --abbrev=4)
+        echo "MAGNUM_BINDINGS_VERSION=${VERSION:9}" >> $GITHUB_ENV
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ env.MAGNUM_BINDINGS_VERSION }}-windows
+        path: install
