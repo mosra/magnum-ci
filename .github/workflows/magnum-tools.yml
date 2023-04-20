@@ -2,8 +2,14 @@ name: Magnum Tools
 
 on: [push, pull_request, workflow_dispatch]
 
+# Cancel in-progress builds on push to same branch / PR
+# https://stackoverflow.com/a/72408109
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 env:
-  BASIS_VERSION: v1_15_update2
+  BASIS_VERSION: 1_15_update2
   ASSIMP_VERSION: 5.2.5
   MESHOPTIMIZER_VERSION: 0.18
   SDL_VERSION: 2.0.20
@@ -161,8 +167,8 @@ jobs:
     - name: Fetch Basis Universal sources
       run: |
         mkdir basis-universal && cd basis-universal
-        wget https://github.com/BinomialLLC/basis_universal/archive/${{ env.BASIS_VERSION }}.tar.gz
-        tar --strip-components 1 -xzf ${{ env.BASIS_VERSION }}.tar.gz
+        wget https://github.com/BinomialLLC/basis_universal/archive/v${{ env.BASIS_VERSION }}.tar.gz
+        tar --strip-components 1 -xzf v${{ env.BASIS_VERSION }}.tar.gz
     - name: Build & install Corrade
       run: |
         mkdir corrade-build && cd corrade-build
@@ -494,6 +500,76 @@ jobs:
         Invoke-WebRequest http://www.libsdl.org/release/SDL2-devel-${{ env.SDL_VERSION }}-VC.zip -O SDL2-devel-${{ env.SDL_VERSION }}-VC.zip
         unzip SDL2-devel-${{ env.SDL_VERSION }}-VC.zip
         ren SDL2-${{ env.SDL_VERSION }} SDL
+    - name: Fetch prebuilt meshoptimizer
+      run: |
+        cd deps
+        Invoke-WebRequest https://ci.magnum.graphics/meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}.zip -O meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}.zip
+        unzip meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}.zip
+    - name: Fetch prebuilt Assimp
+      # The try_compile() command FOR SOME REASON builds a Debug version,
+      # making the link fail if only release libraries are present, UGH
+      run: |
+        cd deps
+        Invoke-WebRequest https://ci.magnum.graphics/assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os }}.zip -O assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os }}.zip
+        Invoke-WebRequest https://ci.magnum.graphics/assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os }}-debug.zip -O assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os }}-debug.zip
+        unzip assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os }}.zip
+        unzip -o assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os }}-debug.zip
+    - name: Fetch prebuilt zlib
+      # Zlib is present from Assimp already, overwrite
+      run: |
+        cd deps
+        Invoke-WebRequest https://ci.magnum.graphics/zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os }}.zip -O zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os }}.zip
+        unzip -o zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os }}.zip
+    - name: Fetch prebuilt libpng
+      run: |
+        cd deps
+        Invoke-WebRequest https://ci.magnum.graphics/libpng-${{ env.PNG_VERSION }}-${{ matrix.os }}.zip -O libpng-${{ env.PNG_VERSION }}-${{ matrix.os }}.zip
+        unzip libpng-${{ env.PNG_VERSION }}-${{ matrix.os }}.zip
+    - name: Fetch prebuilt libjpeg-turbo
+      run: |
+        cd deps
+        Invoke-WebRequest https://ci.magnum.graphics/libjpeg-turbo-${{ env.JPEG_VERSION }}-${{ matrix.os }}.zip -O libjpeg-turbo-${{ env.JPEG_VERSION }}-${{ matrix.os }}.zip
+        unzip libjpeg-turbo-${{ env.JPEG_VERSION }}-${{ matrix.os }}.zip
+    - name: Fetch prebuilt openexr
+      run: |
+        cd deps
+        Invoke-WebRequest https://ci.magnum.graphics/openexr-${{ env.OPENEXR_VERSION }}-${{ matrix.os }}.zip -O openexr-${{ env.OPENEXR_VERSION }}-${{ matrix.os }}.zip
+        unzip openexr-${{ env.OPENEXR_VERSION }}-${{ matrix.os }}.zip
+    - name: Fetch prebuilt zlib-ng
+      # This is extracted ínto a subdirectory as it conflicts with zlib and is
+      # nastily patched into FindSpng
+      # TODO handle better (needs patches in libspng itself to remember if
+      #   zlib-ng got used)
+      run: |
+        cd deps
+        mkdir zng
+        cd zng
+        Invoke-WebRequest https://ci.magnum.graphics/zlib-ng-${{ env.ZLIBNG_VERSION }}-${{ matrix.os }}.zip -O zlib-ng-${{ env.ZLIBNG_VERSION }}-${{ matrix.os }}.zip
+        unzip zlib-ng-${{ env.ZLIBNG_VERSION }}-${{ matrix.os }}.zip
+    - name: Patch FindSpng to use zlib-ng
+      # TODO this hardcodes Actions build path (because for Bash it's /d/a
+      # instead of D:/a so can't use $(pwd)), handle better
+      shell: bash
+      # $GITHUB_WORKSPACE is with BACKSLASHES, so it has to be patched as well
+      run: |
+        sed -i "s^INTERFACE_LINK_LIBRARIES ZLIB::ZLIB)^INTERFACE_LINK_LIBRARIES ${GITHUB_WORKSPACE//\\//}/deps/zng/lib/zlibstatic.lib)^" magnum-plugins/modules/FindSpng.cmake
+    - name: Fetch prebuilt libspng
+      run: |
+        cd deps
+        Invoke-WebRequest https://ci.magnum.graphics/libspng-${{ env.SPNG_VERSION }}-${{ matrix.os }}-zng.zip -O libspng-${{ env.SPNG_VERSION }}-${{ matrix.os }}-zng.zip
+        unzip libspng-${{ env.SPNG_VERSION }}-${{ matrix.os }}-zng.zip
+    - name: Fetch Basis Universal sources
+      # Fuck me, the mess with underscores is outrageous, and WHY it has
+      # a v prefix in the filename but not in the extracted data?!
+      run: |
+        Invoke-WebRequest https://github.com/BinomialLLC/basis_universal/archive/v${{ env.BASIS_VERSION }}.zip -O basis_universal-v${{ env.BASIS_VERSION }}.zip
+        unzip basis_universal-v${{ env.BASIS_VERSION }}.zip
+        ren basis_universal-${{ env.BASIS_VERSION }} basis-universal
+    - name: Fetch prebuilt libwebp
+      run: |
+        Invoke-WebRequest https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-${{ env.WEBP_VERSION }}-windows-x64.zip -O libwebp-${{ env.WEBP_VERSION }}-windows-x64.zip
+        unzip libwebp-${{ env.WEBP_VERSION }}-windows-x64.zip
+        ren libwebp-${{ env.WEBP_VERSION }}-windows-x64 libwebp
     - name: Build & install Corrade
       shell: cmd
       run: |
@@ -551,31 +627,32 @@ jobs:
         cmake ^
           -DCMAKE_CXX_COMPILER=cl.exe ^
           -DCMAKE_BUILD_TYPE=Release ^
-          -DCMAKE_PREFIX_PATH=%CD:\=/%/deps ^
+          -DCMAKE_PREFIX_PATH="%CD:\=/%/deps;%CD:\=/%/libwebp" ^
           -DCMAKE_INSTALL_PREFIX=%CD:\=/%/install ^
-          -DMAGNUM_WITH_ASSIMPIMPORTER=OFF ^
+          -DBASIS_UNIVERSAL_DIR=%CD:\=/%/basis-universal ^
+          -DMAGNUM_WITH_ASSIMPIMPORTER=ON ^
           -DMAGNUM_WITH_ASTCIMPORTER=ON ^
-          -DMAGNUM_WITH_BASISIMAGECONVERTER=OFF ^
-          -DMAGNUM_WITH_BASISIMPORTER=OFF ^
+          -DMAGNUM_WITH_BASISIMAGECONVERTER=ON ^
+          -DMAGNUM_WITH_BASISIMPORTER=ON ^
           -DMAGNUM_WITH_DDSIMPORTER=ON ^
           -DMAGNUM_WITH_DEVILIMAGEIMPORTER=OFF ^
           -DMAGNUM_WITH_GLSLANGSHADERCONVERTER=OFF ^
           -DMAGNUM_WITH_GLTFIMPORTER=ON ^
           -DMAGNUM_WITH_GLTFSCENECONVERTER=ON ^
           -DMAGNUM_WITH_ICOIMPORTER=ON ^
-          -DMAGNUM_WITH_JPEGIMAGECONVERTER=OFF ^
-          -DMAGNUM_WITH_JPEGIMPORTER=OFF ^
+          -DMAGNUM_WITH_JPEGIMAGECONVERTER=ON ^
+          -DMAGNUM_WITH_JPEGIMPORTER=ON ^
           -DMAGNUM_WITH_KTXIMAGECONVERTER=ON ^
           -DMAGNUM_WITH_KTXIMPORTER=ON ^
-          -DMAGNUM_WITH_MESHOPTIMIZERSCENECONVERTER=OFF ^
+          -DMAGNUM_WITH_MESHOPTIMIZERSCENECONVERTER=ON ^
           -DMAGNUM_WITH_MINIEXRIMAGECONVERTER=ON ^
-          -DMAGNUM_WITH_OPENEXRIMAGECONVERTER=OFF ^
-          -DMAGNUM_WITH_OPENEXRIMPORTER=OFF ^
-          -DMAGNUM_WITH_PNGIMAGECONVERTER=OFF ^
-          -DMAGNUM_WITH_PNGIMPORTER=OFF ^
+          -DMAGNUM_WITH_OPENEXRIMAGECONVERTER=ON ^
+          -DMAGNUM_WITH_OPENEXRIMPORTER=ON ^
+          -DMAGNUM_WITH_PNGIMAGECONVERTER=ON ^
+          -DMAGNUM_WITH_PNGIMPORTER=ON ^
           -DMAGNUM_WITH_PRIMITIVEIMPORTER=ON ^
           -DMAGNUM_WITH_SPIRVTOOLSSHADERCONVERTER=OFF ^
-          -DMAGNUM_WITH_SPNGIMPORTER=OFF ^
+          -DMAGNUM_WITH_SPNGIMPORTER=ON ^
           -DMAGNUM_WITH_STANFORDIMPORTER=ON ^
           -DMAGNUM_WITH_STANFORDSCENECONVERTER=ON ^
           -DMAGNUM_WITH_STBDXTIMAGECONVERTER=ON ^
@@ -585,7 +662,7 @@ jobs:
           -DMAGNUM_WITH_STBTRUETYPEFONT=ON ^
           -DMAGNUM_WITH_STLIMPORTER=ON ^
           -DMAGNUM_WITH_UFBXIMPORTER=ON ^
-          -DMAGNUM_WITH_WEBPIMPORTER=OFF ^
+          -DMAGNUM_WITH_WEBPIMPORTER=ON ^
           -G Ninja -S magnum-plugins -B magnum-plugins-build || exit /b
         ninja -C magnum-plugins-build install || exit /b
         rem Copy also the useful gltf<->glb Python scripts
