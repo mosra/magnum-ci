@@ -506,14 +506,10 @@ jobs:
         Invoke-WebRequest https://ci.magnum.graphics/meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}.zip -O meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}.zip
         unzip meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}.zip
     - name: Fetch prebuilt Assimp
-      # The try_compile() command FOR SOME REASON builds a Debug version,
-      # making the link fail if only release libraries are present, UGH
       run: |
         cd deps
         Invoke-WebRequest https://ci.magnum.graphics/assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os }}.zip -O assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os }}.zip
-        Invoke-WebRequest https://ci.magnum.graphics/assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os }}-debug.zip -O assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os }}-debug.zip
         unzip assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os }}.zip
-        unzip -o assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os }}-debug.zip
     - name: Fetch prebuilt zlib
       # Zlib is present from Assimp already, overwrite
       run: |
