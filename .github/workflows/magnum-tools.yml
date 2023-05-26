@@ -23,6 +23,8 @@ env:
   OPENEXR_VERSION: 3.1.5
   SPNG_VERSION: 0.7.2
   WEBP_VERSION: 1.2.4
+  GLSLANG_VERSION: 8.13.3743
+  SPIRVTOOLS_VERSION: 2020.4
 
 jobs:
   ubuntu:
@@ -164,6 +166,16 @@ jobs:
         cd deps
         wget https://ci.magnum.graphics/libspng-${{ env.SPNG_VERSION }}-${{ matrix.os }}-zng.zip
         unzip libspng-${{ env.SPNG_VERSION }}-${{ matrix.os }}-zng.zip
+    - name: Fetch prebuilt glslang
+      run: |
+        cd deps
+        wget https://ci.magnum.graphics/glslang-${{ env.GLSLANG_VERSION }}-${{ matrix.os }}-gcc7.zip
+        unzip glslang-${{ env.GLSLANG_VERSION }}-${{ matrix.os }}-gcc7.zip
+    - name: Fetch prebuilt SPIRV-Tools
+      run: |
+        cd deps
+        wget https://ci.magnum.graphics/spirv-tools-${{ env.SPIRVTOOLS_VERSION }}-${{ matrix.os }}-gcc7.zip
+        unzip spirv-tools-${{ env.SPIRVTOOLS_VERSION }}-${{ matrix.os }}-gcc7.zip
     - name: Fetch Basis Universal sources
       run: |
         mkdir basis-universal && cd basis-universal
@@ -238,7 +250,7 @@ jobs:
           -DMAGNUM_WITH_BASISIMPORTER=ON \
           -DMAGNUM_WITH_DDSIMPORTER=ON \
           -DMAGNUM_WITH_DEVILIMAGEIMPORTER=OFF \
-          -DMAGNUM_WITH_GLSLANGSHADERCONVERTER=OFF \
+          -DMAGNUM_WITH_GLSLANGSHADERCONVERTER=ON \
           -DMAGNUM_WITH_GLTFIMPORTER=ON \
           -DMAGNUM_WITH_GLTFSCENECONVERTER=ON \
           -DMAGNUM_WITH_ICOIMPORTER=ON \
@@ -253,7 +265,7 @@ jobs:
           -DMAGNUM_WITH_PNGIMAGECONVERTER=ON \
           -DMAGNUM_WITH_PNGIMPORTER=ON \
           -DMAGNUM_WITH_PRIMITIVEIMPORTER=ON \
-          -DMAGNUM_WITH_SPIRVTOOLSSHADERCONVERTER=OFF \
+          -DMAGNUM_WITH_SPIRVTOOLSSHADERCONVERTER=ON \
           -DMAGNUM_WITH_SPNGIMPORTER=ON \
           -DMAGNUM_WITH_STANFORDIMPORTER=ON \
           -DMAGNUM_WITH_STANFORDSCENECONVERTER=ON \
@@ -566,6 +578,16 @@ jobs:
         Invoke-WebRequest https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-${{ env.WEBP_VERSION }}-windows-x64.zip -O libwebp-${{ env.WEBP_VERSION }}-windows-x64.zip
         unzip libwebp-${{ env.WEBP_VERSION }}-windows-x64.zip
         ren libwebp-${{ env.WEBP_VERSION }}-windows-x64 libwebp
+    - name: Fetch prebuilt glslang
+      run: |
+        cd deps
+        Invoke-WebRequest https://ci.magnum.graphics/glslang-${{ env.GLSLANG_VERSION }}-${{ matrix.os }}.zip -O glslang-${{ env.GLSLANG_VERSION }}-${{ matrix.os }}.zip
+        unzip glslang-${{ env.GLSLANG_VERSION }}-${{ matrix.os }}.zip
+    - name: Fetch prebuilt SPIRV-Tools
+      run: |
+        cd deps
+        Invoke-WebRequest https://ci.magnum.graphics/spirv-tools-${{ env.SPIRVTOOLS_VERSION }}-${{ matrix.os }}.zip -O spirv-tools-${{ env.SPIRVTOOLS_VERSION }}-${{ matrix.os }}.zip
+        unzip spirv-tools-${{ env.SPIRVTOOLS_VERSION }}-${{ matrix.os }}.zip
     - name: Build & install Corrade
       shell: cmd
       run: |
@@ -632,7 +654,7 @@ jobs:
           -DMAGNUM_WITH_BASISIMPORTER=ON ^
           -DMAGNUM_WITH_DDSIMPORTER=ON ^
           -DMAGNUM_WITH_DEVILIMAGEIMPORTER=OFF ^
-          -DMAGNUM_WITH_GLSLANGSHADERCONVERTER=OFF ^
+          -DMAGNUM_WITH_GLSLANGSHADERCONVERTER=ON ^
           -DMAGNUM_WITH_GLTFIMPORTER=ON ^
           -DMAGNUM_WITH_GLTFSCENECONVERTER=ON ^
           -DMAGNUM_WITH_ICOIMPORTER=ON ^
@@ -647,7 +669,7 @@ jobs:
           -DMAGNUM_WITH_PNGIMAGECONVERTER=ON ^
           -DMAGNUM_WITH_PNGIMPORTER=ON ^
           -DMAGNUM_WITH_PRIMITIVEIMPORTER=ON ^
-          -DMAGNUM_WITH_SPIRVTOOLSSHADERCONVERTER=OFF ^
+          -DMAGNUM_WITH_SPIRVTOOLSSHADERCONVERTER=ON ^
           -DMAGNUM_WITH_SPNGIMPORTER=ON ^
           -DMAGNUM_WITH_STANFORDIMPORTER=ON ^
           -DMAGNUM_WITH_STANFORDSCENECONVERTER=ON ^
