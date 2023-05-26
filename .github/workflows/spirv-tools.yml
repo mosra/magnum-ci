@@ -2,6 +2,12 @@ name: SPIRV-Tools
 
 on: [push, pull_request]
 
+# Cancel in-progress builds on push to same branch / PR
+# https://stackoverflow.com/a/72408109
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 env:
   SPIRV_VERSION: 1.5.3.reservations1
   VERSION: 2020.4
@@ -9,24 +15,30 @@ env:
 jobs:
   ubuntu:
     name: ${{ matrix.os }}-gcc${{ matrix.env.GCC }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runs-on }}
+    container: ${{ matrix.container }}
     strategy:
       matrix:
         include:
-        - os: ubuntu-16.04
+        - os: ubuntu-18.04
+          runs-on: ubuntu-latest
+          container: ubuntu:bionic-20220427
           env:
             GCC: 4.8
-        - os: ubuntu-16.04
+        - os: ubuntu-18.04
+          runs-on: ubuntu-latest
+          container: ubuntu:bionic-20220427
           env:
-            GCC: 5
+            GCC: 7
     steps:
-    - name: Install GCC 4.8
-      run: sudo apt-get install g++-4.8
-      if: ${{ matrix.env.GCC == '4.8' }}
-    - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@v3
+    - name: Install base build tools
+      # apt update is needed to fetch package lists; python is unconditionally
+      # looked up by cmake because it's NEEDED FOR BUILDING TESTS FFS
+      run: |
+        apt update
+        apt install -y ninja-build cmake g++-${{ matrix.env.GCC }} python3
     - name: Clone SPIRV-Tools
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         repository: KhronosGroup/SPIRV-Tools
         ref: v${{ env.VERSION }}
@@ -34,22 +46,22 @@ jobs:
         # to magnum-ci?! what the fuck?!
         path: SPIRV-Tools
     - name: Clone SPIRV-Headers
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         repository: KhronosGroup/SPIRV-Headers
         ref: ${{ env.SPIRV_VERSION }}
         path: SPIRV-Tools/external/spirv-headers
     - name: Build & install
       run: |
-        cmake \
-          -G Ninja \
+        mkdir build && cd build
+        cmake ../SPIRV-Tools \
           -DCMAKE_C_COMPILER=gcc-${{ matrix.env.GCC }} \
           -DCMAKE_CXX_COMPILER=g++-${{ matrix.env.GCC }} \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
           -DSPIRV_SKIP_EXECUTABLES=ON \
-          -S SPIRV-Tools -B build
-        ninja -C build install/strip
+          -G Ninja
+        ninja install/strip
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
       with:
@@ -61,14 +73,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2019, windows-2016]
+        os: [windows-2019]
     steps:
     - name: Install Ninja
       uses: seanmiddleditch/gha-setup-ninja@v3
     - name: Set up Visual Studio environment
       uses: seanmiddleditch/gha-setup-vsdevenv@v3
     - name: Clone SPIRV-Tools
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         repository: KhronosGroup/SPIRV-Tools
         ref: v${{ env.VERSION }}
