@@ -455,6 +455,202 @@ jobs:
         name: magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ env.MAGNUM_BINDINGS_VERSION }}-linux-x64
         path: magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ env.MAGNUM_BINDINGS_VERSION }}-linux-x64.tar
 
+  mac:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      matrix:
+        # TODO ARM Mac in Q4 2023? https://github.com/github/roadmap/issues/528
+        include:
+        - os: macos11-x64
+          runs-on: macos-11
+    steps:
+    - name: Install base build tools
+      run: |
+        brew install ninja
+        mkdir -p deps
+    - name: Clone Corrade
+      uses: actions/checkout@v3
+      with:
+        repository: mosra/corrade
+        path: corrade
+        # Needed for tags :(
+        fetch-depth: 0
+    - name: Clone Magnum
+      uses: actions/checkout@v3
+      with:
+        repository: mosra/magnum
+        path: magnum
+        # Needed for tags :(
+        fetch-depth: 0
+    - name: Clone Magnum Plugins
+      uses: actions/checkout@v3
+      with:
+        repository: mosra/magnum-plugins
+        path: magnum-plugins
+        # Needed for tags :(
+        fetch-depth: 0
+    - name: Fetch Basis Universal sources
+      run: |
+        mkdir basis-universal && cd basis-universal
+        wget https://github.com/BinomialLLC/basis_universal/archive/v${{ env.BASIS_VERSION }}.tar.gz
+        tar --strip-components 1 -xzf v${{ env.BASIS_VERSION }}.tar.gz
+    - name: Build & install Corrade
+      run: |
+        mkdir corrade-build && cd corrade-build
+        cmake ../corrade \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
+          -DCMAKE_INSTALL_RPATH=@executable_path/../lib \
+          -DCORRADE_BUILD_DEPRECATED=OFF \
+          -DCORRADE_WITH_TESTSUITE=OFF \
+          -DCORRADE_WITH_INTERCONNECT=OFF \
+          -G Ninja
+        ninja install/strip
+    - name: Build & install Magnum
+      run: |
+        mkdir magnum-build && cd magnum-build
+        cmake ../magnum \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
+          -DCMAKE_PREFIX_PATH=$(pwd)/../deps \
+          -DCMAKE_INSTALL_RPATH="@executable_path/../lib" \
+          -DMAGNUM_BUILD_DEPRECATED=OFF \
+          -DMAGNUM_WITH_AUDIO=OFF \
+          -DMAGNUM_WITH_GL=ON \
+          -DMAGNUM_WITH_DEBUGTOOLS=ON \
+          -DMAGNUM_WITH_MESHTOOLS=ON \
+          -DMAGNUM_WITH_PRIMITIVES=ON \
+          -DMAGNUM_WITH_SCENEGRAPH=ON \
+          -DMAGNUM_WITH_SCENETOOLS=ON \
+          -DMAGNUM_WITH_SHADERS=ON \
+          -DMAGNUM_WITH_SHADERTOOLS=ON \
+          -DMAGNUM_WITH_TEXT=ON \
+          -DMAGNUM_WITH_TEXTURETOOLS=ON \
+          -DMAGNUM_WITH_TRADE=ON \
+          -DMAGNUM_WITH_VK=OFF \
+          -DMAGNUM_WITH_SDL2APPLICATION=OFF \
+          -DMAGNUM_WITH_GL_INFO=ON \
+          -DMAGNUM_WITH_VK_INFO=OFF \
+          -DMAGNUM_WITH_IMAGECONVERTER=ON \
+          -DMAGNUM_WITH_SCENECONVERTER=ON \
+          -DMAGNUM_WITH_SHADERCONVERTER=ON \
+          -DMAGNUM_WITH_ANYIMAGECONVERTER=ON \
+          -DMAGNUM_WITH_ANYIMAGEIMPORTER=ON \
+          -DMAGNUM_WITH_ANYSCENECONVERTER=ON \
+          -DMAGNUM_WITH_ANYSCENEIMPORTER=ON \
+          -DMAGNUM_WITH_ANYSHADERCONVERTER=ON \
+          -DMAGNUM_WITH_OBJIMPORTER=OFF \
+          -DMAGNUM_WITH_TGAIMAGECONVERTER=ON \
+          -DMAGNUM_WITH_TGAIMPORTER=ON \
+          -G Ninja
+        ninja install/strip
+    - name: Build & install Magnum Plugins
+      run: |
+        mkdir magnum-plugins-build && cd magnum-plugins-build
+        cmake ../magnum-plugins \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
+          -DCMAKE_PREFIX_PATH=$(pwd)/../deps \
+          `# plugins also need to look up to lib/ from lib/magnum/<interface>/` \
+          -DCMAKE_INSTALL_RPATH="@executable_path/../lib;@executable_path/../.." \
+          -DBASIS_UNIVERSAL_DIR=$(pwd)/../basis-universal \
+          -DMAGNUM_WITH_ASSIMPIMPORTER=OFF \
+          -DMAGNUM_WITH_ASTCIMPORTER=ON \
+          -DMAGNUM_WITH_BASISIMAGECONVERTER=ON \
+          -DMAGNUM_WITH_BASISIMPORTER=ON \
+          -DMAGNUM_WITH_BCDECIMAGECONVERTER=ON \
+          -DMAGNUM_WITH_DDSIMPORTER=ON \
+          -DMAGNUM_WITH_DEVILIMAGEIMPORTER=OFF \
+          -DMAGNUM_WITH_ETCDECIMAGECONVERTER=ON \
+          -DMAGNUM_WITH_GLSLANGSHADERCONVERTER=OFF \
+          -DMAGNUM_WITH_GLTFIMPORTER=ON \
+          -DMAGNUM_WITH_GLTFSCENECONVERTER=ON \
+          -DMAGNUM_WITH_ICOIMPORTER=ON \
+          -DMAGNUM_WITH_JPEGIMAGECONVERTER=OFF \
+          -DMAGNUM_WITH_JPEGIMPORTER=OFF \
+          -DMAGNUM_WITH_KTXIMAGECONVERTER=ON \
+          -DMAGNUM_WITH_KTXIMPORTER=ON \
+          -DMAGNUM_WITH_MESHOPTIMIZERSCENECONVERTER=OFF \
+          -DMAGNUM_WITH_MINIEXRIMAGECONVERTER=ON \
+          -DMAGNUM_WITH_OPENEXRIMAGECONVERTER=OFF \
+          -DMAGNUM_WITH_OPENEXRIMPORTER=OFF \
+          -DMAGNUM_WITH_PNGIMAGECONVERTER=OFF \
+          -DMAGNUM_WITH_PNGIMPORTER=OFF \
+          -DMAGNUM_WITH_PRIMITIVEIMPORTER=ON \
+          -DMAGNUM_WITH_SPIRVTOOLSSHADERCONVERTER=OFF \
+          -DMAGNUM_WITH_SPNGIMPORTER=OFF \
+          -DMAGNUM_WITH_STANFORDIMPORTER=ON \
+          -DMAGNUM_WITH_STANFORDSCENECONVERTER=ON \
+          -DMAGNUM_WITH_STBDXTIMAGECONVERTER=ON \
+          -DMAGNUM_WITH_STBIMAGECONVERTER=ON \
+          -DMAGNUM_WITH_STBIMAGEIMPORTER=ON \
+          -DMAGNUM_WITH_STBRESIZEIMAGECONVERTER=ON \
+          -DMAGNUM_WITH_STBTRUETYPEFONT=ON \
+          -DMAGNUM_WITH_STLIMPORTER=ON \
+          -DMAGNUM_WITH_UFBXIMPORTER=ON \
+          -DMAGNUM_WITH_WEBPIMPORTER=OFF \
+          -G Ninja
+        ninja install/strip
+        # Copy also the useful gltf<->glb Python scripts
+        install ../magnum-plugins/src/MagnumPlugins/GltfImporter/Test/glb2gltf.py $(pwd)/../install/bin
+        install ../magnum-plugins/src/MagnumPlugins/GltfImporter/Test/gltf2glb.py $(pwd)/../install/bin
+    - name: Remove includes, CMake modules, static libraries, corrade-rc, Python Egg Info
+      run: |
+        # Keep version info tho
+        mv install/include/Corrade/version.h install/versionCorrade.h
+        mv install/include/Magnum/version.h install/
+        mv install/include/Magnum/versionPlugins.h install/
+        # mv install/include/Magnum/versionExtras.h install/
+        # mv install/include/Magnum/versionBindings.h install/
+        rm -r install/include
+        mkdir -p install/include/Corrade
+        mv install/versionCorrade.h install/include/Corrade/version.h
+        mkdir -p install/include/Magnum
+        mv install/version*.h install/include/Magnum/
+        rm -r install/share
+        # rm -r install/lib/*.a
+        rm install/bin/corrade-rc
+        # TODO can this be just not made at all?
+        # rm -r install/python/*.egg-info
+    - name: Collect version info
+      # Without this it uses dash?! GITHUB ACTIONS WHY DO YOU SAY YOU PREFER
+      # BASH BY DEFAULT IF IT'S NOT TRUE?!
+      shell: bash
+      # the tag name is included only for Corrade, then the others have just N
+      # and a short hash (4 instead of 8 numbers, or at least as much to have
+      # the hash unique)
+      run: |
+        cd corrade
+        VERSION=$(git describe --match "v*" --abbrev=4)
+        echo "CORRADE_VERSION=$VERSION" >> $GITHUB_ENV
+        cd ../magnum
+        VERSION=$(git describe --match "v*" --abbrev=4)
+        echo "MAGNUM_VERSION=${VERSION:9}" >> $GITHUB_ENV
+        cd ../magnum-plugins
+        VERSION=$(git describe --match "v*" --abbrev=4)
+        echo "MAGNUM_PLUGINS_VERSION=${VERSION:9}" >> $GITHUB_ENV
+        # cd ../magnum-extras
+        # VERSION=$(git describe --match "v*" --abbrev=4)
+        # echo "MAGNUM_EXTRAS_VERSION=${VERSION:9}" >> $GITHUB_ENV
+        # cd ../magnum-bindings
+        # VERSION=$(git describe --match "v*" --abbrev=4)
+        # echo "MAGNUM_BINDINGS_VERSION=${VERSION:9}" >> $GITHUB_ENV
+    - name: Compress files because GitHub Actions artifact upload is beyond stupid
+      # https://github.com/actions/upload-artifact#maintaining-file-permissions-and-case-sensitive-files
+      # like, seriously, file permissions lost?! and one HTTP request *per one
+      # fucking file*?!
+      # TODO add extras + bindings version once built
+      run: |
+        mv install magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-macos11-x64
+        tar -cf magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-macos11-x64.tar magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-macos11-x64
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      # TODO add extras + bindings version once built
+      with:
+        name: magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-macos11-x64
+        path: magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-macos11-x64.tar
+
   windows:
     name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
