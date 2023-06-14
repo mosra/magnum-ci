@@ -41,10 +41,10 @@ jobs:
     - name: Install base build tools, OpenGL and Vulkan
       # apt update is needed to fetch package lists; software-properties-common
       # is the add-apt-repository command (why that isn't included by
-      # default?!); tzdata is then needed by the python PPA
+      # default?!); libexpat1-dev and tzdata is then needed by the python debs
       run: |
         apt update
-        apt install -y libgl1-mesa-dev libvulkan-dev wget unzip chrpath ninja-build cmake g++ software-properties-common
+        apt install -y libgl1-mesa-dev libvulkan-dev wget unzip chrpath ninja-build cmake g++ software-properties-common libexpat1-dev
         # Installing the tzdata package ASKS FOR TIMEZONE IN THE CONSOLE?! WHO
         # DESIGNED THIS CRAP?! https://stackoverflow.com/a/58264927
         DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata
@@ -57,20 +57,36 @@ jobs:
         add-apt-repository ppa:git-core/ppa
         apt update
         apt install -y git
-    - name: Install Python versions from the deadsnakes PPA
-      # I don't need any venv stuff nor pip, but setuptools (for installing the
-      # bindings package) isn't included by default so I have to install it via
-      # pip, however pip isn't included by default either so I have to
-      # bootstrap it via ensurepip, and ensurepip isn't included by default
-      # EITHER, only in the venv package. Then, ensurepip *magically* makes
-      # setuptools available although that's not really documented anywhere.
-      # What a system, wow.
+    - name: Fetch Python debs from the no-longer-supported deadsnakes PPA
+      # The deadsnakes PPA dropped 18.04 support in June 2023, the last 18.04
+      # debs are downloaded from the archive and hosted
+      # https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa/+builds?build_text=&build_state=built
+      # https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa/+build/24906232 (3.9)
+      # https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa/+build/25962597 (3.10)
+      # https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa/+build/26277625 (3.11, in case it gets ever build)
       run: |
-        add-apt-repository ppa:deadsnakes/ppa
-        apt update
-        apt install -y python3.9 python3.9-dev python3.9-venv python3.10 python3.10-dev python3.10-venv
-        python3.10 -m ensurepip --altinstall
+        mkdir python-deb && cd python-deb
+        for i in libpython3.9 libpython3.9-dev libpython3.9-minimal libpython3.9-stdlib python3.9 python3.9-dev python3.9-minimal python3.9-venv; do
+          wget https://ci.magnum.graphics/py39/${i}_3.9.16-1+bionic1_amd64.deb
+        done
+        for i in python3.9-distutils python3.9-lib2to3; do
+          wget https://ci.magnum.graphics/py39/${i}_3.9.16-1+bionic1_all.deb
+        done
+        for i in libpython3.10 libpython3.10-dev libpython3.10-minimal libpython3.10-stdlib python3.10 python3.10-dev python3.10-minimal python3.10-venv; do
+          wget https://ci.magnum.graphics/py310/${i}_3.10.11-1+bionic1_amd64.deb
+        done
+        for i in python3.10-distutils python3.10-lib2to3; do
+          wget https://ci.magnum.graphics/py310/${i}_3.10.11-1+bionic1_all.deb
+        done
+        # for i in libpython3.11 libpython3.11-dev libpython3.11-minimal libpython3.11-stdlib python3.11 python3.11-dev python3.11-minimal python3.11-venv; do
+        #   wget https://ci.magnum.graphics/py311/${i}_3.11.3-1+bionic2_amd64.deb
+        # done
+        # for i in python3.11-distutils python3.11-lib2to3; do
+        #   wget https://ci.magnum.graphics/py311/${i}_3.11.3-1+bionic2_all.deb
+        # done
+        dpkg -i *.deb
         python3.9 -m ensurepip --altinstall
+        python3.10 -m ensurepip --altinstall
     - name: Clone Corrade
       uses: actions/checkout@v3
       with:
