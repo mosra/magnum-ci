@@ -2,6 +2,12 @@ name: OpenEXR
 
 on: [push, pull_request]
 
+# Cancel in-progress builds on push to same branch / PR
+# https://stackoverflow.com/a/72408109
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 env:
   ZLIB_VERSION: 1.2.13
   OPENEXR_VERSION: 3.1.5
@@ -133,13 +139,27 @@ jobs:
 
   ubuntu:
     name: ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runs-on }}
+    container: ${{ matrix.container }}
     strategy:
       matrix:
-        os: [ubuntu-18.04]
+        include:
+        - os: ubuntu-18.04
+          runs-on: ubuntu-latest
+          container: ubuntu:bionic-20220427
     steps:
-    - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Install base build tools
+      run: |
+        apt update
+        apt install -y ninja-build g++ wget unzip git
+        mkdir -p deps
+    # It needs CMake 3.12, 18.04 has 3.10
+    - name: Download CMake 3.12
+      run: |
+          mkdir -p $HOME/cmake && cd $HOME/cmake
+          wget --no-check-certificate https://cmake.org/files/v3.12/cmake-3.12.4-Linux-x86_64.tar.gz
+          tar --strip-components=1 -xzf cmake-3.12.4-Linux-x86_64.tar.gz
+          echo "$HOME/cmake/bin" >> $GITHUB_PATH
     - name: Fetch prebuilt zlib
       run: |
         mkdir -p deps && cd deps
@@ -153,10 +173,11 @@ jobs:
         path: openexr
     - name: Build & install
       run: |
-        cmake \
+        mkdir build && cd build
+        cmake ../openexr \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
-          -DCMAKE_PREFIX_PATH=$(pwd)/deps \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
+          -DCMAKE_PREFIX_PATH=$(pwd)/../deps \
           -DBUILD_SHARED_LIBS=OFF \
           -DBUILD_TESTING=OFF \
           -DOPENEXR_BUILD_TOOLS=OFF \
@@ -165,8 +186,8 @@ jobs:
           -DOPENEXR_INSTALL_TOOLS=OFF \
           -DOPENEXR_INSTALL_PKG_CONFIG=OFF \
           -DOPENEXR_FORCE_INTERNAL_IMATH=ON \
-          -G Ninja -S openexr -B build
-        ninja -C build install/strip
+          -G Ninja
+        ninja install/strip
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
       with:
@@ -175,22 +196,30 @@ jobs:
 
   ubuntu-25:
     name: 25-${{ matrix.os }}-gcc${{ matrix.env.GCC }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runs-on }}
+    container: ${{ matrix.container }}
     strategy:
       matrix:
         include:
         - os: ubuntu-18.04
+          runs-on: ubuntu-latest
+          container: ubuntu:bionic-20220427
           env:
             GCC: 4.8
         - os: ubuntu-18.04
+          runs-on: ubuntu-latest
+          container: ubuntu:bionic-20220427
           env:
             GCC: 7
     steps:
+    - name: Install base build tools
+      run: |
+        apt update
+        apt install -y ninja-build cmake g++ wget zlib1g-dev
+        mkdir -p deps
     - name: Install GCC 4.8
-      run: sudo apt-get install g++-4.8
+      run: apt-get install -y g++-4.8
       if: ${{ matrix.env.GCC == '4.8' }}
-    - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@master
     # No (static) zlib used here -- we want it to depend on the system version
     - name: Clone OpenEXR
       uses: actions/checkout@v3
@@ -200,11 +229,12 @@ jobs:
         path: openexr
     - name: Build & install
       run: |
-        cmake \
+        mkdir build && cd build
+        cmake ../openexr \
           -DCMAKE_C_COMPILER=gcc-${{ matrix.env.GCC }} \
           -DCMAKE_CXX_COMPILER=g++-${{ matrix.env.GCC }} \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
           -DPYILMBASE_ENABLE=OFF \
           -DBUILD_SHARED_LIBS=OFF \
           -DBUILD_TESTING=OFF \
@@ -215,8 +245,8 @@ jobs:
           -DILMBASE_INSTALL_PKG_CONFIG=OFF \
           -DOPENEXR_INSTALL_PKG_CONFIG=OFF \
           -DPYILMBASE_INSTALL_PKG_CONFIG=OFF \
-          -G Ninja -S openexr -B build
-        ninja -C build install/strip
+          -G Ninja
+        ninja install/strip
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
       with:
