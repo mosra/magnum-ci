@@ -2,6 +2,12 @@ name: libjpeg-turbo
 
 on: [push, pull_request]
 
+# Cancel in-progress builds on push to same branch / PR
+# https://stackoverflow.com/a/72408109
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 env:
   JPEG_VERSION: 2.1.4
 
@@ -55,15 +61,20 @@ jobs:
 
   ubuntu:
     name: ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runs-on }}
+    container: ${{ matrix.container }}
     strategy:
       matrix:
-        os: [ubuntu-18.04]
+        include:
+        - os: ubuntu-18.04
+          runs-on: ubuntu-latest
+          container: ubuntu:bionic-20220427
     steps:
-    - name: Set up NASM
-      uses: ilammy/setup-nasm@v1
-    - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Install base build tools
+      run: |
+        apt update
+        apt install -y ninja-build cmake g++ nasm
+        mkdir -p deps
     - name: Clone jpeg-turbo
       uses: actions/checkout@v3
       with:
@@ -72,15 +83,16 @@ jobs:
         path: libjpeg-turbo
     - name: Build & install
       run: |
-        cmake \
+        mkdir build && cd build
+        cmake ../libjpeg-turbo \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
           -DWITH_JPEG8=ON \
           -DENABLE_SHARED=OFF \
           -DREQUIRE_SIMD=ON \
           -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-          -G Ninja -S libjpeg-turbo -B build
-        ninja -C build install/strip
+          -G Ninja
+        ninja install/strip
     - name: Remove useless cruft
       run: |
         rm -r install/share install/bin
