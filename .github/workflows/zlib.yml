@@ -2,6 +2,12 @@ name: zlib
 
 on: [push, pull_request]
 
+# Cancel in-progress builds on push to same branch / PR
+# https://stackoverflow.com/a/72408109
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 env:
   ZLIB_VERSION: 1.2.13
 
@@ -81,13 +87,20 @@ jobs:
 
   ubuntu:
     name: ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runs-on }}
+    container: ${{ matrix.container }}
     strategy:
       matrix:
-        os: [ubuntu-18.04]
+        include:
+        - os: ubuntu-18.04
+          runs-on: ubuntu-latest
+          container: ubuntu:bionic-20220427
     steps:
-    - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Install base build tools
+      run: |
+        apt update
+        apt install -y ninja-build cmake g++
+        mkdir -p deps
     - name: Clone zlib
       uses: actions/checkout@v3
       with:
@@ -96,13 +109,14 @@ jobs:
         path: zlib
     - name: Build & install
       run: |
-        cmake \
+        mkdir build && cd build
+        cmake ../zlib \
           -DCMAKE_BUILD_TYPE=Release \
           -DSKIP_INSTALL_FILES=ON \
-          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
           -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-          -G Ninja -S zlib -B zlib-build
-        ninja -C zlib-build install/strip
+          -G Ninja
+        ninja install/strip
     - name: Remove shared libraries
       run: |
         rm -r install/lib/libz.so*
