@@ -2,8 +2,14 @@ name: zstd
 
 on: [push, pull_request]
 
+# Cancel in-progress builds on push to same branch / PR
+# https://stackoverflow.com/a/72408109
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 env:
-  ZSTD_VERSION: 1.5.2
+  ZSTD_VERSION: 1.5.5
 
 jobs:
   windows:
@@ -77,13 +83,19 @@ jobs:
 
   ubuntu:
     name: ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runs-on }}
+    container: ${{ matrix.container }}
     strategy:
       matrix:
-        os: [ubuntu-18.04]
+        include:
+        - os: ubuntu-18.04
+          runs-on: ubuntu-latest
+          container: ubuntu:bionic-20220427
     steps:
-    - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Install base build tools
+      run: |
+        apt update
+        apt install -y ninja-build g++ cmake
     - name: Clone zstd
       uses: actions/checkout@v3
       with:
@@ -92,15 +104,16 @@ jobs:
         path: zstd
     - name: Build & install
       run: |
-        cmake \
+        mkdir build_ && cd build_
+        cmake ../zstd/build/cmake \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
           -DZSTD_BUILD_PROGRAMS=OFF \
           -DZSTD_BUILD_SHARED=OFF \
           -DZSTD_BUILD_STATIC=ON \
           -DZSTD_MULTITHREAD_SUPPORT=OFF \
-          -G Ninja -S zstd/build/cmake -B zstd-build
-        ninja -C zstd-build install/strip
+          -G Ninja
+        ninja install/strip
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
       with:
