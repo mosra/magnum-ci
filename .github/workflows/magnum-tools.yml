@@ -25,6 +25,7 @@ env:
   WEBP_VERSION: 1.2.4
   GLSLANG_VERSION: 8.13.3743
   SPIRVTOOLS_VERSION: 2020.4
+  ZSTD_VERSION: 1.5.5
 
 jobs:
   ubuntu:
@@ -192,11 +193,18 @@ jobs:
         cd deps
         wget https://ci.magnum.graphics/spirv-tools-${{ env.SPIRVTOOLS_VERSION }}-${{ matrix.os }}-gcc7.zip
         unzip spirv-tools-${{ env.SPIRVTOOLS_VERSION }}-${{ matrix.os }}-gcc7.zip
+    - name: Fetch prebuilt zstd
+      run: |
+        cd deps
+        wget https://ci.magnum.graphics/zstd-${{ env.ZSTD_VERSION }}-${{ matrix.os }}.zip
+        unzip zstd-${{ env.ZSTD_VERSION }}-${{ matrix.os }}.zip
     - name: Fetch Basis Universal sources
       run: |
         mkdir basis-universal && cd basis-universal
         wget https://github.com/BinomialLLC/basis_universal/archive/v${{ env.BASIS_VERSION }}.tar.gz
         tar --strip-components 1 -xzf v${{ env.BASIS_VERSION }}.tar.gz
+        # We want to use the external Zstd instead of this
+        rm -r zstd
     - name: Build & install Corrade
       run: |
         mkdir corrade-build && cd corrade-build
@@ -780,6 +788,11 @@ jobs:
         cd deps
         Invoke-WebRequest https://ci.magnum.graphics/libspng-${{ env.SPNG_VERSION }}-${{ matrix.os }}-zng.zip -O libspng-${{ env.SPNG_VERSION }}-${{ matrix.os }}-zng.zip
         unzip libspng-${{ env.SPNG_VERSION }}-${{ matrix.os }}-zng.zip
+    - name: Fetch prebuilt zstd
+      run: |
+        cd deps
+        Invoke-WebRequest https://ci.magnum.graphics/zstd-${{ env.ZSTD_VERSION }}-${{ matrix.os }}.zip -O zstd-${{ env.ZSTD_VERSION }}-${{ matrix.os }}.zip
+        unzip zstd-${{ env.ZSTD_VERSION }}-${{ matrix.os }}.zip
     - name: Fetch Basis Universal sources
       # Fuck me, the mess with underscores is outrageous, and WHY it has
       # a v prefix in the filename but not in the extracted data?!
@@ -787,6 +800,8 @@ jobs:
         Invoke-WebRequest https://github.com/BinomialLLC/basis_universal/archive/v${{ env.BASIS_VERSION }}.zip -O basis_universal-v${{ env.BASIS_VERSION }}.zip
         unzip basis_universal-v${{ env.BASIS_VERSION }}.zip
         ren basis_universal-${{ env.BASIS_VERSION }} basis-universal
+        # We want to use the external Zstd instead of this
+        Remove-Item -Recurse -Force basis-universal\zstd
     - name: Fetch prebuilt libwebp
       run: |
         Invoke-WebRequest https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-${{ env.WEBP_VERSION }}-windows-x64.zip -O libwebp-${{ env.WEBP_VERSION }}-windows-x64.zip
