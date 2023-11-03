@@ -3,7 +3,9 @@ name: MeshOptimizer
 on: [push, pull_request]
 
 env:
-  MESHOPTIMIZER_VERSION: 0.18
+  # FFS, without the quotes it gets interpreted as 0.2. Who asked for numeric
+  # support in a config language?!
+  MESHOPTIMIZER_VERSION: "0.20"
 
 jobs:
   windows:
