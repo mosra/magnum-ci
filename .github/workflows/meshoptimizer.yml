@@ -2,6 +2,12 @@ name: MeshOptimizer
 
 on: [push, pull_request]
 
+# Cancel in-progress builds on push to same branch / PR
+# https://stackoverflow.com/a/72408109
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 env:
   # FFS, without the quotes it gets interpreted as 0.2. Who asked for numeric
   # support in a config language?!
@@ -85,13 +91,20 @@ jobs:
 
   ubuntu:
     name: ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runs-on }}
+    container: ${{ matrix.container }}
     strategy:
       matrix:
-        os: [ubuntu-18.04]
+        include:
+        - os: ubuntu-18.04
+          runs-on: ubuntu-latest
+          container: ubuntu:bionic-20220427
     steps:
-    - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Install base build tools
+      # apt update is needed to fetch package lists
+      run: |
+        apt update
+        apt install -y ninja-build cmake g++
     - name: Clone MeshOptimizer
       uses: actions/checkout@v3
       with:
@@ -100,11 +113,12 @@ jobs:
         path: meshoptimizer
     - name: Build & install
       run: |
-        cmake \
+        mkdir meshoptimizer-build && cd meshoptimizer-build
+        cmake ../meshoptimizer \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
-          -G Ninja -S meshoptimizer -B meshoptimizer-build
-        ninja -C meshoptimizer-build install/strip
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
+          -G Ninja
+        ninja install/strip
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
       with:
