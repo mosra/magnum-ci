@@ -124,3 +124,36 @@ jobs:
       with:
         name: meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}
         path: install
+
+  mac:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      matrix:
+        include:
+        - os: macos11-x64-arm64
+          runs-on: macos-11
+    steps:
+    - name: Install base build tools
+      run: |
+        brew install ninja
+    - name: Clone MeshOptimizer
+      uses: actions/checkout@v3
+      with:
+        repository: zeux/meshoptimizer
+        ref: v${{ env.MESHOPTIMIZER_VERSION }}
+        path: meshoptimizer
+    - name: Build & install
+      run: |
+        mkdir meshoptimizer-build && cd meshoptimizer-build
+        cmake ../meshoptimizer \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
+          -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" \
+          -G Ninja
+        ninja install/strip
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}
+        path: install
