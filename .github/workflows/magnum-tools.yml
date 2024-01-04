@@ -486,9 +486,8 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
     strategy:
       matrix:
-        # TODO ARM Mac in Q4 2023? https://github.com/github/roadmap/issues/528
         include:
-        - os: macos11-x64
+        - os: macos11-x64-arm64
           runs-on: macos-11
     steps:
     - name: Install base build tools
@@ -516,6 +515,11 @@ jobs:
         path: magnum-plugins
         # Needed for tags :(
         fetch-depth: 0
+    - name: Fetch prebuilt meshoptimizer
+      run: |
+        cd deps
+        wget https://ci.magnum.graphics/meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}.zip
+        unzip meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}.zip
     - name: Fetch Basis Universal sources
       run: |
         mkdir basis-universal && cd basis-universal
@@ -528,6 +532,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
           -DCMAKE_INSTALL_RPATH=@executable_path/../lib \
+          -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" \
           -DCORRADE_BUILD_DEPRECATED=OFF \
           -DCORRADE_WITH_TESTSUITE=OFF \
           -DCORRADE_WITH_INTERCONNECT=OFF \
@@ -541,6 +546,7 @@ jobs:
           -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
           -DCMAKE_PREFIX_PATH=$(pwd)/../deps \
           -DCMAKE_INSTALL_RPATH="@executable_path/../lib" \
+          -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" \
           -DMAGNUM_BUILD_DEPRECATED=OFF \
           -DMAGNUM_WITH_AUDIO=OFF \
           -DMAGNUM_WITH_GL=ON \
@@ -580,6 +586,9 @@ jobs:
           -DCMAKE_PREFIX_PATH=$(pwd)/../deps \
           `# plugins also need to look up to lib/ from lib/magnum/<interface>/` \
           -DCMAKE_INSTALL_RPATH="@executable_path/../lib;@executable_path/../.." \
+          -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" \
+          `# otherwise x86-only zstd gets pulled in from the system, unwanted` \
+          -DCMAKE_DISABLE_FIND_PACKAGE_Zstd=ON \
           -DBASIS_UNIVERSAL_DIR=$(pwd)/../basis-universal \
           -DMAGNUM_WITH_ASSIMPIMPORTER=OFF \
           -DMAGNUM_WITH_ASTCIMPORTER=ON \
@@ -597,7 +606,7 @@ jobs:
           -DMAGNUM_WITH_JPEGIMPORTER=OFF \
           -DMAGNUM_WITH_KTXIMAGECONVERTER=ON \
           -DMAGNUM_WITH_KTXIMPORTER=ON \
-          -DMAGNUM_WITH_MESHOPTIMIZERSCENECONVERTER=OFF \
+          -DMAGNUM_WITH_MESHOPTIMIZERSCENECONVERTER=ON \
           -DMAGNUM_WITH_MINIEXRIMAGECONVERTER=ON \
           -DMAGNUM_WITH_OPENEXRIMAGECONVERTER=OFF \
           -DMAGNUM_WITH_OPENEXRIMPORTER=OFF \
@@ -668,14 +677,14 @@ jobs:
       # fucking file*?!
       # TODO add extras + bindings version once built
       run: |
-        mv install magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-macos11-x64
-        tar -cf magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-macos11-x64.tar magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-macos11-x64
+        mv install magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ matrix.os }}
+        tar -cf magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ matrix.os }}.tar magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ matrix.os }}
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       # TODO add extras + bindings version once built
       with:
-        name: magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-macos11-x64
-        path: magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-macos11-x64.tar
+        name: magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ matrix.os }}
+        path: magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ matrix.os }}.tar
 
   windows:
     name: ${{ matrix.os }}
