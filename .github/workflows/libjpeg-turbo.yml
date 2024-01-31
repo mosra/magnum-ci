@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  JPEG_VERSION: 2.1.4
+  JPEG_VERSION: 3.0.2
 
 jobs:
   windows:
