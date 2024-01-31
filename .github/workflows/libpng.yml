@@ -9,8 +9,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  ZLIB_VERSION: 1.2.13
-  PNG_VERSION: 1.6.39
+  ZLIB_VERSION: 1.3.1
+  PNG_VERSION: 1.6.42
 
 jobs:
   windows:
@@ -36,7 +36,7 @@ jobs:
       run: |
         mkdir deps
         cd deps
-        Invoke-WebRequest https://ci.magnum.graphics/zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os }}.zip -O zlib.zip
+        Invoke-WebRequest https://ci.magnum.graphics/zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os }}.zip -OutFile zlib.zip
         unzip zlib.zip
     - name: Clone libpng
       uses: actions/checkout@v2
@@ -76,7 +76,7 @@ jobs:
       run: |
         mkdir deps
         cd deps
-        Invoke-WebRequest https://ci.magnum.graphics/zlib-${{ env.ZLIB_VERSION }}-windows-mingw.zip -O zlib.zip
+        Invoke-WebRequest https://ci.magnum.graphics/zlib-${{ env.ZLIB_VERSION }}-windows-mingw.zip -OutFile zlib.zip
         unzip zlib.zip
     - name: Clone libpng
       uses: actions/checkout@v2
