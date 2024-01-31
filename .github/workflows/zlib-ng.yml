@@ -3,9 +3,7 @@ name: zlib-ng
 on: [push, pull_request]
 
 env:
-  # 2.0.7 is the latest release, but we need name mangling support which isn't
-  # in any stable release yet even though being added in Oct 2021
-  ZLIBNG_VERSION: bfde4b91ee675a82c0ef64c6f30c1bbe7546a64d
+  ZLIBNG_VERSION: 2.1.6
 
 jobs:
   windows:
