@@ -3,32 +3,36 @@ name: SDL
 on: [push, pull_request]
 
 env:
-  SDL_VERSION: 2.0.20
+  SDL_VERSION: 2.28.5
 
 jobs:
   ubuntu:
     name: ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runs-on }}
+    container: ${{ matrix.container }}
     strategy:
       matrix:
-        os: [ubuntu-18.04]
+        include:
+        - os: ubuntu-18.04
+          runs-on: ubuntu-latest
+          container: ubuntu:bionic-20220427
     steps:
-    - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@v3
+    - name: Install base build tools
+      run: |
+        apt update
+        apt install -y ninja-build cmake g++ libgl1-mesa-dev
     - name: Clone SDL
       uses: actions/checkout@v3
       with:
         repository: libsdl-org/SDL
         path: sdl
         ref: release-${{ env.SDL_VERSION }}
-    - name: Install OpenGL
-      run: |
-        sudo apt install -y libgl1-mesa-dev
     - name: Build & install
       run: |
-        cmake \
+        mkdir sdl-build && cd sdl-build
+        cmake ../sdl \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
           -DSDL_ATOMIC=OFF \
           -DSDL_CPUINFO=OFF \
           -DSDL_FILE=OFF \
@@ -38,12 +42,11 @@ jobs:
           -DSDL_POWER=OFF \
           -DSDL_RENDER=OFF \
           -DSDL_SENSOR=OFF \
-          -DSDL_THREADS=OFF \
           -DSDL_SHARED=OFF \
           `# Needed so it can be linked to a *.so for Magnum Python Bindings` \
           -DSDL_STATIC_PIC=ON \
-          -G Ninja -S sdl -B build
-        ninja -C build install/strip
+          -G Ninja
+        ninja install/strip
     - name: Remove sdl2-config binary, M4 and pkgconfig cruft
       run: |
         rm -r install/bin
