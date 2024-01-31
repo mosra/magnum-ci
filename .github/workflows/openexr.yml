@@ -9,8 +9,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  ZLIB_VERSION: 1.2.13
-  OPENEXR_VERSION: 3.1.5
+  ZLIB_VERSION: 1.3.1
+  OPENEXR_VERSION: 3.2.1
   # For testing on the magnum-plugins CI we deliberately want older versions
   # -- the stock version on Ubuntu 18.04 is 2.2, which is too old and leaky,
   # so can't use that, but using version 3 would mean we lose the possibility
@@ -39,7 +39,7 @@ jobs:
       # Built on the `zlib` branch but hosted manually to avoid having to mess
       # with access permissions
       run: |
-        Invoke-WebRequest https://ci.magnum.graphics/zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os }}.zip -O zlib.zip
+        Invoke-WebRequest https://ci.magnum.graphics/zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os }}.zip -OutFile zlib.zip
         7z x zlib.zip -o${{ github.workspace }}/deps
     - name: Build & install Debug
       shell: cmd
@@ -110,7 +110,7 @@ jobs:
       # Built on the `zlib` branch but hosted manually to avoid having to mess
       # with access permissions
       run: |
-        Invoke-WebRequest https://ci.magnum.graphics/zlib-${{ env.ZLIB_VERSION }}-windows-mingw.zip -O zlib.zip
+        Invoke-WebRequest https://ci.magnum.graphics/zlib-${{ env.ZLIB_VERSION }}-windows-mingw.zip -OutFile zlib.zip
         7z x zlib.zip -o${{ github.workspace }}/deps
     - name: Build & install
       shell: cmd
