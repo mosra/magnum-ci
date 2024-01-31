@@ -9,7 +9,16 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  ZLIB_VERSION: 1.3.1
+  # Assimp depends on zlib, which ideally would be referenced externally, but
+  # the buildsystem is stupid and hardcoded its FULL PATH into the CMake config
+  # files, making the resulting binary useless everywhere except on GH Actions
+  # of the magnum-ci repo again.
+  #
+  # Another possibility would be to let it build and then delete the bundled
+  # file and use an external build instead, but the library is named
+  # differently (libzlibstatic.a here vs libz.a, additional `d` suffixes for
+  # Windows debug builds), and patching that up is too much effort.
+  # ZLIB_VERSION: 1.3.1
   ASSIMP_VERSION: 5.3.1
 
 jobs:
@@ -30,12 +39,6 @@ jobs:
         repository: assimp/assimp
         ref: v${{ env.ASSIMP_VERSION }}
         path: assimp
-    - name: Download prebuilt zlib
-      # Built on the `zlib` branch but hosted manually to avoid having to mess
-      # with access permissions
-      run: |
-        Invoke-WebRequest https://ci.magnum.graphics/zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os }}.zip -OutFile zlib.zip
-        7z x zlib.zip -o${{ github.workspace }}/deps
     - name: Build & install Debug
       shell: cmd
       run: |
@@ -46,14 +49,10 @@ jobs:
           -DCMAKE_BUILD_TYPE=Debug ^
           -DASSIMP_BUILD_ASSIMP_TOOLS=OFF ^
           -DASSIMP_BUILD_TESTS=OFF ^
-          -DASSIMP_BUILD_ZLIB=OFF ^
+          -DASSIMP_BUILD_ZLIB=ON ^
           -DASSIMP_NO_EXPORT=ON ^
           -DBUILD_SHARED_LIBS=OFF ^
-          -DZLIB_INCLUDE_DIR=${{ github.workspace }}/deps/include ^
-          -DZLIB_LIBRARY_REL=${{ github.workspace }}/deps/lib/zlibstatic.lib ^
-          -DZLIB_LIBRARY_DBG=${{ github.workspace }}/deps/lib/zlibstatic.lib ^
           -DCMAKE_INSTALL_PREFIX=%CD:\=/%/../install-debug ^
-          -DCMAKE_PREFIX_PATH=%CD:\=/%/deps ^
           -G Ninja
         ninja install
     - name: Build & install Release
@@ -66,14 +65,10 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release ^
           -DASSIMP_BUILD_ASSIMP_TOOLS=OFF ^
           -DASSIMP_BUILD_TESTS=OFF ^
-          -DASSIMP_BUILD_ZLIB=OFF ^
+          -DASSIMP_BUILD_ZLIB=ON ^
           -DASSIMP_NO_EXPORT=ON ^
           -DBUILD_SHARED_LIBS=OFF ^
-          -DZLIB_INCLUDE_DIR=${{ github.workspace }}/deps/include ^
-          -DZLIB_LIBRARY_REL=${{ github.workspace }}/deps/lib/zlibstatic.lib ^
-          -DZLIB_LIBRARY_DBG=${{ github.workspace }}/deps/lib/zlibstatic.lib ^
           -DCMAKE_INSTALL_PREFIX=%CD:\=/%/../install ^
-          -DCMAKE_PREFIX_PATH=%CD:\=/%/deps ^
           -G Ninja
         ninja install
     - name: Upload Debug artifacts
@@ -101,12 +96,6 @@ jobs:
         repository: assimp/assimp
         ref: v${{ env.ASSIMP_VERSION }}
         path: assimp
-    - name: Download prebuilt zlib
-      # Built on the `zlib` branch but hosted manually to avoid having to mess
-      # with access permissions
-      run: |
-        Invoke-WebRequest https://ci.magnum.graphics/zlib-${{ env.ZLIB_VERSION }}-windows-mingw.zip -OutFile zlib.zip
-        7z x zlib.zip -o${{ github.workspace }}/deps
     - name: Build & install
       shell: cmd
       run: |
@@ -117,14 +106,10 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release ^
           -DASSIMP_BUILD_ASSIMP_TOOLS=OFF ^
           -DASSIMP_BUILD_TESTS=OFF ^
-          -DASSIMP_BUILD_ZLIB=OFF ^
+          -DASSIMP_BUILD_ZLIB=ON ^
           -DASSIMP_NO_EXPORT=ON ^
           -DBUILD_SHARED_LIBS=OFF ^
-          -DZLIB_INCLUDE_DIR=${{ github.workspace }}/deps/include ^
-          -DZLIB_LIBRARY_REL=${{ github.workspace }}/deps/lib/libzlibstatic.a ^
-          -DZLIB_LIBRARY_DBG=${{ github.workspace }}/deps/lib/libzlibstatic.a ^
           -DCMAKE_INSTALL_PREFIX=%CD:\=/%/../install ^
-          -DCMAKE_PREFIX_PATH=%CD:\=/%/deps ^
           -G Ninja
         ninja install
     - name: Upload artifacts
@@ -147,7 +132,7 @@ jobs:
     - name: Install base build tools
       run: |
         apt update
-        apt install -y ninja-build cmake g++ wget unzip
+        apt install -y ninja-build cmake g++
         mkdir -p deps
     - name: Clone Assimp
       uses: actions/checkout@v3
@@ -155,11 +140,6 @@ jobs:
         repository: assimp/assimp
         ref: v${{ env.ASSIMP_VERSION }}
         path: assimp
-    - name: Fetch prebuilt zlib
-      run: |
-        mkdir -p deps && cd deps
-        wget https://ci.magnum.graphics/zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os }}.zip
-        unzip zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os }}.zip
     - name: Build & install
       run: |
         mkdir assimp-build && cd assimp-build
@@ -167,11 +147,10 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release \
           -DASSIMP_BUILD_ASSIMP_TOOLS=OFF \
           -DASSIMP_BUILD_TESTS=OFF \
-          -DASSIMP_BUILD_ZLIB=OFF \
+          -DASSIMP_BUILD_ZLIB=ON \
           -DASSIMP_NO_EXPORT=ON \
           -DBUILD_SHARED_LIBS=OFF \
           -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
-          -DCMAKE_PREFIX_PATH=$(pwd)/../deps \
           -G Ninja
         ninja install/strip
     - name: Upload artifacts
