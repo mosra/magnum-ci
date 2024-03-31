@@ -302,6 +302,7 @@ jobs:
           -DMAGNUM_WITH_STBTRUETYPEFONT=ON \
           -DMAGNUM_WITH_STLIMPORTER=ON \
           -DMAGNUM_WITH_UFBXIMPORTER=ON \
+          -DMAGNUM_WITH_WEBPIMAGECONVERTER=ON \
           -DMAGNUM_WITH_WEBPIMPORTER=ON \
           -G Ninja
         ninja install/strip
@@ -622,6 +623,7 @@ jobs:
           -DMAGNUM_WITH_STBTRUETYPEFONT=ON \
           -DMAGNUM_WITH_STLIMPORTER=ON \
           -DMAGNUM_WITH_UFBXIMPORTER=ON \
+          -DMAGNUM_WITH_WEBPIMAGECONVERTER=OFF \
           -DMAGNUM_WITH_WEBPIMPORTER=OFF \
           -G Ninja
         ninja install/strip
@@ -920,6 +922,7 @@ jobs:
           -DMAGNUM_WITH_STBTRUETYPEFONT=ON ^
           -DMAGNUM_WITH_STLIMPORTER=ON ^
           -DMAGNUM_WITH_UFBXIMPORTER=ON ^
+          -DMAGNUM_WITH_WEBPIMAGECONVERTER=ON ^
           -DMAGNUM_WITH_WEBPIMPORTER=ON ^
           -G Ninja -S magnum-plugins -B magnum-plugins-build || exit /b
         ninja -C magnum-plugins-build install || exit /b
