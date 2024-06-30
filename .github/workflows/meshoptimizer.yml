@@ -9,9 +9,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # FFS, without the quotes it gets interpreted as 0.2. Who asked for numeric
-  # support in a config language?!
-  MESHOPTIMIZER_VERSION: "0.20"
+  # FFS, BEWARE, 0.20 etc without quotes gets interpreted as 0.2. Who asked for
+  # numeric support in a config language?!
+  MESHOPTIMIZER_VERSION: "0.21"
 
 jobs:
   windows:
@@ -22,11 +22,11 @@ jobs:
         os: [windows-2019]
     steps:
     - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@master
+      uses: seanmiddleditch/gha-setup-ninja@v5
     - name: Set up Visual Studio environment
-      uses: seanmiddleditch/gha-setup-vsdevenv@master
+      uses: compnerd/gha-setup-vsdevenv@v6
     - name: Clone MeshOptimizer
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4.1.7
       with:
         repository: zeux/meshoptimizer
         ref: v${{ env.MESHOPTIMIZER_VERSION }}
@@ -50,12 +50,12 @@ jobs:
           -G Ninja -S meshoptimizer -B meshoptimizer-build
         ninja -C meshoptimizer-build install
     - name: Upload Debug artifacts
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4.3.3
       with:
         name: meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}-debug
         path: install-debug
     - name: Upload Release artifacts
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4.3.3
       with:
         name: meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}
         path: install
@@ -65,11 +65,11 @@ jobs:
     runs-on: windows-2019
     steps:
     - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@master
+      uses: seanmiddleditch/gha-setup-ninja@v5
     - name: Set up MinGW environment
       uses: msys2/setup-msys2@v2
     - name: Clone MeshOptimizer
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4.1.7
       with:
         repository: zeux/meshoptimizer
         ref: v${{ env.MESHOPTIMIZER_VERSION }}
@@ -84,7 +84,7 @@ jobs:
           -G Ninja -S meshoptimizer -B meshoptimizer-build
         ninja -C meshoptimizer-build install/strip
     - name: Upload artifacts
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4.3.3
       with:
         name: meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-windows-mingw
         path: install
@@ -106,7 +106,8 @@ jobs:
         apt update
         apt install -y ninja-build cmake g++
     - name: Clone MeshOptimizer
-      uses: actions/checkout@v3
+      # checkout v4 uses Node 20 which doesn't work on Ubuntu 18.04
+      uses: actions/checkout@v3.6.0
       with:
         repository: zeux/meshoptimizer
         ref: v${{ env.MESHOPTIMIZER_VERSION }}
@@ -120,7 +121,8 @@ jobs:
           -G Ninja
         ninja install/strip
     - name: Upload artifacts
-      uses: actions/upload-artifact@v1
+      # upload-artifact v4 uses Node 20 which doesn't work on Ubuntu 18.04
+      uses: actions/upload-artifact@v3.1.3
       with:
         name: meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}
         path: install
@@ -131,14 +133,14 @@ jobs:
     strategy:
       matrix:
         include:
-        - os: macos11-x64-arm64
-          runs-on: macos-11
+        - os: macos12-x64-arm64
+          runs-on: macos-12
     steps:
     - name: Install base build tools
       run: |
         brew install ninja
     - name: Clone MeshOptimizer
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4.1.7
       with:
         repository: zeux/meshoptimizer
         ref: v${{ env.MESHOPTIMIZER_VERSION }}
@@ -150,10 +152,11 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
           -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0" \
           -G Ninja
         ninja install/strip
     - name: Upload artifacts
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4.3.3
       with:
         name: meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}
         path: install
