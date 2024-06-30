@@ -11,9 +11,9 @@ concurrency:
 env:
   BASIS_VERSION: 1_15_update2
   ASSIMP_VERSION: 5.3.1
-  # FFS, without the quotes it gets interpreted as 0.2. Who asked for numeric
-  # support in a config language?!
-  MESHOPTIMIZER_VERSION: "0.20"
+  # FFS, BEWARE, 0.20 etc without quotes gets interpreted as 0.2. Who asked for
+  # numeric support in a config language?!
+  MESHOPTIMIZER_VERSION: "0.21"
   SDL_VERSION: 2.28.5
   PYBIND_VERSION: 2.11.1
   ZLIB_VERSION: 1.3.1
@@ -89,35 +89,40 @@ jobs:
         python3.9 -m ensurepip --altinstall
         python3.10 -m ensurepip --altinstall
     - name: Clone Corrade
-      uses: actions/checkout@v3
+      # checkout v4 uses Node 20 which doesn't work on Ubuntu 18.04
+      uses: actions/checkout@v3.6.0
       with:
         repository: mosra/corrade
         path: corrade
         # Needed for tags :(
         fetch-depth: 0
     - name: Clone Magnum
-      uses: actions/checkout@v3
+      # checkout v4 uses Node 20 which doesn't work on Ubuntu 18.04
+      uses: actions/checkout@v3.6.0
       with:
         repository: mosra/magnum
         path: magnum
         # Needed for tags :(
         fetch-depth: 0
     - name: Clone Magnum Plugins
-      uses: actions/checkout@v3
+      # checkout v4 uses Node 20 which doesn't work on Ubuntu 18.04
+      uses: actions/checkout@v3.6.0
       with:
         repository: mosra/magnum-plugins
         path: magnum-plugins
         # Needed for tags :(
         fetch-depth: 0
     - name: Clone Magnum Extras
-      uses: actions/checkout@v3
+      # checkout v4 uses Node 20 which doesn't work on Ubuntu 18.04
+      uses: actions/checkout@v3.6.0
       with:
         repository: mosra/magnum-extras
         path: magnum-extras
         # Needed for tags :(
         fetch-depth: 0
     - name: Clone Magnum Bindings
-      uses: actions/checkout@v3
+      # checkout v4 uses Node 20 which doesn't work on Ubuntu 18.04
+      uses: actions/checkout@v3.6.0
       with:
         repository: mosra/magnum-bindings
         path: magnum-bindings
@@ -476,7 +481,8 @@ jobs:
         mv install magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ env.MAGNUM_BINDINGS_VERSION }}-linux-x64
         tar -cf magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ env.MAGNUM_BINDINGS_VERSION }}-linux-x64.tar magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ env.MAGNUM_BINDINGS_VERSION }}-linux-x64
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      # upload-artifact v4 uses Node 20 which doesn't work on Ubuntu 18.04
+      uses: actions/upload-artifact@v3.1.3
       with:
         name: magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ env.MAGNUM_BINDINGS_VERSION }}-linux-x64
         path: magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ env.MAGNUM_BINDINGS_VERSION }}-linux-x64.tar
@@ -487,29 +493,29 @@ jobs:
     strategy:
       matrix:
         include:
-        - os: macos11-x64-arm64
-          runs-on: macos-11
+        - os: macos12-x64-arm64
+          runs-on: macos-12
     steps:
     - name: Install base build tools
       run: |
         brew install ninja
         mkdir -p deps
     - name: Clone Corrade
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4.1.7
       with:
         repository: mosra/corrade
         path: corrade
         # Needed for tags :(
         fetch-depth: 0
     - name: Clone Magnum
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4.1.7
       with:
         repository: mosra/magnum
         path: magnum
         # Needed for tags :(
         fetch-depth: 0
     - name: Clone Magnum Plugins
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4.1.7
       with:
         repository: mosra/magnum-plugins
         path: magnum-plugins
@@ -533,6 +539,7 @@ jobs:
           -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
           -DCMAKE_INSTALL_RPATH=@executable_path/../lib \
           -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0" \
           -DCORRADE_BUILD_DEPRECATED=OFF \
           -DCORRADE_WITH_TESTSUITE=OFF \
           -DCORRADE_WITH_INTERCONNECT=OFF \
@@ -547,6 +554,7 @@ jobs:
           -DCMAKE_PREFIX_PATH=$(pwd)/../deps \
           -DCMAKE_INSTALL_RPATH="@executable_path/../lib" \
           -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0" \
           -DMAGNUM_BUILD_DEPRECATED=OFF \
           -DMAGNUM_WITH_AUDIO=OFF \
           -DMAGNUM_WITH_GL=ON \
@@ -587,6 +595,7 @@ jobs:
           `# plugins also need to look up to lib/ from lib/magnum/<interface>/` \
           -DCMAKE_INSTALL_RPATH="@executable_path/../lib;@executable_path/../.." \
           -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0" \
           `# otherwise x86-only zstd gets pulled in from the system, unwanted` \
           -DCMAKE_DISABLE_FIND_PACKAGE_Zstd=ON \
           -DBASIS_UNIVERSAL_DIR=$(pwd)/../basis-universal \
@@ -681,7 +690,7 @@ jobs:
         mv install magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ matrix.os }}
         tar -cf magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ matrix.os }}.tar magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ matrix.os }}
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4.3.3
       # TODO add extras + bindings version once built
       with:
         name: magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ matrix.os }}
@@ -699,39 +708,39 @@ jobs:
       run: |
         mkdir deps
     - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@v3
+      uses: seanmiddleditch/gha-setup-ninja@v5
     - name: Set up Visual Studio environment
-      uses: seanmiddleditch/gha-setup-vsdevenv@v3
+      uses: compnerd/gha-setup-vsdevenv@v6
     - name: Clone Corrade
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4.1.7
       with:
         repository: mosra/corrade
         path: corrade
         # Needed for tags :(
         fetch-depth: 0
     - name: Clone Magnum
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4.1.7
       with:
         repository: mosra/magnum
         path: magnum
         # Needed for tags :(
         fetch-depth: 0
     - name: Clone Magnum Plugins
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4.1.7
       with:
         repository: mosra/magnum-plugins
         path: magnum-plugins
         # Needed for tags :(
         fetch-depth: 0
     - name: Clone Magnum Extras
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4.1.7
       with:
         repository: mosra/magnum-extras
         path: magnum-extras
         # Needed for tags :(
         fetch-depth: 0
     - name: Clone Magnum Bindings
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4.1.7
       with:
         repository: mosra/magnum-bindings
         path: magnum-bindings
@@ -1021,7 +1030,7 @@ jobs:
         VERSION=$(git describe --match "v*" --abbrev=4)
         echo "MAGNUM_BINDINGS_VERSION=${VERSION:9}" >> $GITHUB_ENV
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4.3.3
       with:
         name: magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ env.MAGNUM_BINDINGS_VERSION }}-windows
         path: install
