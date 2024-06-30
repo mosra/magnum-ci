@@ -2,30 +2,55 @@ name: SwiftShader
 
 on: [push, pull_request]
 
+# Cancel in-progress builds on push to same branch / PR
+# https://stackoverflow.com/a/72408109
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 env:
-  # Ideally use a commit that's verified to work well elsewhere (Arch
-  # swiftshader-git package, for example)
-  COMMIT: a6940c8e6eb0c61c433ed4b61ae04c12ff37bfbb
+  # This one includes a fix for building on ARM64 on macOS, and seems to fix
+  # various other bugs
+  COMMIT: 14dcbed947ce755af1fcbfb3ba8e643b4e769860
 
 # Mostly just copied from here, with ES1 disabled:
 # https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=swiftshader-git
 jobs:
   ubuntu-gles:
     name: GLES, ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runs-on }}
+    container: ${{ matrix.container }}
     strategy:
       matrix:
-        # On 16.04 it uses GCC 5, not GCC 4.8, because it can't build on that
-        # one. That's fine however, there are no issues when linking Magnum
-        # built with GCC 4.8 against SwiftShader built with GCC 5.
-        #
-        # As of 2021-09-20, 16.04 is no more on GitHub Actions.
-        os: [ubuntu-18.04]
+        include:
+        - os: ubuntu-18.04
+          runs-on: ubuntu-latest
+          container: ubuntu:bionic-20220427
     steps:
-    - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@v3
+    - name: Install base build tools
+      # apt update is needed to fetch package lists; software-properties-common
+      # is the add-apt-repository command (why that isn't included by
+      # default?!)
+      run: |
+        apt update
+        apt install -y ninja-build libx11-dev libxext-dev zlib1g-dev wget g++ software-properties-common
+    - name: Install a newer Git version from a PPA
+      # The actions/checkout FOR SOME REASON requires Git 2.18+, while 18.04
+      # ships only with 2.17. Ultimately that means the "clones" are not
+      # actually clones, so I can't do git submodule update.
+      run: |
+        add-apt-repository ppa:git-core/ppa
+        apt update
+        apt install -y git
+    - name: Install CMake 3.13
+      run: |
+        mkdir -p $HOME/cmake && cd $HOME/cmake
+        wget --no-check-certificate https://cmake.org/files/v3.13/cmake-3.13.5-Linux-x86_64.tar.gz
+        tar --strip-components=1 -xzf cmake-3.13.5-Linux-x86_64.tar.gz
+        echo $HOME/cmake/bin >> $GITHUB_PATH
     - name: Clone SwiftShader
-      uses: actions/checkout@v2
+      # checkout v4 uses Node 20 which doesn't work on Ubuntu 18.04
+      uses: actions/checkout@v3.6.0
       with:
         repository: google/swiftshader
         ref: ${{ env.COMMIT }}
@@ -42,8 +67,8 @@ jobs:
         echo "SWIFTSHADER_VERSION=$SWIFTSHADER_VERSION" >> $GITHUB_ENV
     - name: Build & install Debug
       run: |
-        cmake \
-          -G Ninja \
+        mkdir build-debug && cd build-debug
+        cmake ../swiftshader \
           -DCMAKE_BUILD_TYPE=Debug \
           -DSWIFTSHADER_BUILD_GLES_CM=OFF \
           -DSWIFTSHADER_BUILD_GLESv2=ON \
@@ -51,8 +76,9 @@ jobs:
           -DSWIFTSHADER_BUILD_PVR=OFF \
           -DSWIFTSHADER_BUILD_TESTS=OFF \
           -DSWIFTSHADER_WARNINGS_AS_ERRORS=OFF \
-          -S swiftshader -B build-debug
-        ninja -C build-debug
+          -G Ninja
+        ninja
+        cd ..
         install -dm755 install-debug/lib
         install -dm755 install-debug/include
         install -dm755 install-debug/include/EGL
@@ -68,8 +94,8 @@ jobs:
           swiftshader/include/KHR/khrplatform.h
     - name: Build & install Release
       run: |
-        cmake \
-          -G Ninja \
+        mkdir build && cd build
+        cmake ../swiftshader \
           -DCMAKE_BUILD_TYPE=Release \
           -DSWIFTSHADER_BUILD_GLES_CM=OFF \
           -DSWIFTSHADER_BUILD_GLESv2=ON \
@@ -77,8 +103,9 @@ jobs:
           -DSWIFTSHADER_BUILD_PVR=OFF \
           -DSWIFTSHADER_BUILD_TESTS=OFF \
           -DSWIFTSHADER_WARNINGS_AS_ERRORS=OFF \
-          -S swiftshader -B build
-        ninja -C build
+          -G Ninja
+        ninja
+        cd ..
         install -dm755 install/lib
         install -dm755 install/include
         install -dm755 install/include/EGL
@@ -93,28 +120,53 @@ jobs:
         install -m644 -t install/include/KHR \
           swiftshader/include/KHR/khrplatform.h
     - name: Upload Debug artifacts
-      uses: actions/upload-artifact@v1
+      # upload-artifact v4 uses Node 20 which doesn't work on Ubuntu 18.04
+      uses: actions/upload-artifact@v3.1.3
       with:
         name: swiftshader-gles-${{ env.SWIFTSHADER_VERSION }}-${{ matrix.os }}-debug
         path: install-debug
     - name: Upload Release artifacts
-      uses: actions/upload-artifact@v1
+      # upload-artifact v4 uses Node 20 which doesn't work on Ubuntu 18.04
+      uses: actions/upload-artifact@v3.1.3
       with:
         name: swiftshader-gles-${{ env.SWIFTSHADER_VERSION }}-${{ matrix.os }}
         path: install
 
   ubuntu-vulkan:
     name: Vulkan, ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runs-on }}
+    container: ${{ matrix.container }}
     strategy:
       matrix:
-        # Vulkan libs don't build with GCC 5 on 16.04, use just 18.04
-        os: [ubuntu-18.04]
+        include:
+        - os: ubuntu-18.04
+          runs-on: ubuntu-latest
+          container: ubuntu:bionic-20220427
     steps:
-    - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@v3
+    - name: Install base build tools
+      # apt update is needed to fetch package lists; software-properties-common
+      # is the add-apt-repository command (why that isn't included by
+      # default?!)
+      run: |
+        apt update
+        apt install -y ninja-build libx11-dev libxext-dev zlib1g-dev wget g++ software-properties-common
+    - name: Install a newer Git version from a PPA
+      # The actions/checkout FOR SOME REASON requires Git 2.18+, while 18.04
+      # ships only with 2.17. Ultimately that means the "clones" are not
+      # actually clones, so I can't so git submodule update.
+      run: |
+        add-apt-repository ppa:git-core/ppa
+        apt update
+        apt install -y git
+    - name: Install CMake 3.13
+      run: |
+        mkdir -p $HOME/cmake && cd $HOME/cmake
+        wget --no-check-certificate https://cmake.org/files/v3.13/cmake-3.13.5-Linux-x86_64.tar.gz
+        tar --strip-components=1 -xzf cmake-3.13.5-Linux-x86_64.tar.gz
+        echo $HOME/cmake/bin >> $GITHUB_PATH
     - name: Clone SwiftShader
-      uses: actions/checkout@v2
+      # checkout v4 uses Node 20 which doesn't work on Ubuntu 18.04
+      uses: actions/checkout@v3.6.0
       with:
         repository: google/swiftshader
         ref: ${{ env.COMMIT }}
@@ -131,8 +183,8 @@ jobs:
         echo "SWIFTSHADER_VERSION=$SWIFTSHADER_VERSION" >> $GITHUB_ENV
     - name: Configure
       run: |
-        cmake \
-          -G Ninja \
+        mkdir build && cd build
+        cmake ../swiftshader \
           -DCMAKE_BUILD_TYPE=Release \
           -DSWIFTSHADER_BUILD_GLES_CM=OFF \
           -DSWIFTSHADER_BUILD_GLESv2=OFF \
@@ -141,10 +193,11 @@ jobs:
           -DSWIFTSHADER_BUILD_TESTS=OFF \
           -DSWIFTSHADER_WARNINGS_AS_ERRORS=OFF \
           -DSPIRV_WERROR=OFF \
-          -S swiftshader -B build
+          -G Ninja
     - name: Build
       run: |
-        ninja -C build
+        cd build
+        ninja
     - name: Install
       run: |
         install -dm755 install/lib
@@ -157,22 +210,26 @@ jobs:
         sed 's#./libvk_swiftshader.so#../../../lib/libvk_swiftshader.so#' \
           -i install/share/vulkan/icd.d/vk_swiftshader_icd.json
     - name: Upload artifacts
-      uses: actions/upload-artifact@v1
+      # upload-artifact v4 uses Node 20 which doesn't work on Ubuntu 18.04
+      uses: actions/upload-artifact@v3.1.3
       with:
         name: swiftshader-vulkan-${{ env.SWIFTSHADER_VERSION }}-${{ matrix.os }}
         path: install
 
   mac:
     name: ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runs-on }}
     strategy:
       matrix:
-        os: [macos-10.15]
+        include:
+        - os: macos12-arm64
+          runs-on: macos-12
     steps:
-    - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@v3
+    - name: Install base build tools
+      run: |
+        brew install ninja
     - name: Clone SwiftShader
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4.1.7
       with:
         repository: google/swiftshader
         ref: ${{ env.COMMIT }}
@@ -192,6 +249,8 @@ jobs:
         cmake \
           -G Ninja \
           -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_OSX_ARCHITECTURES="arm64" \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="12.0" \
           -DSWIFTSHADER_BUILD_GLES_CM=OFF \
           -DSWIFTSHADER_BUILD_GLESv2=ON \
           -DSWIFTSHADER_BUILD_VULKAN=ON \
@@ -237,12 +296,12 @@ jobs:
           -i'.old' install-vulkan/share/vulkan/icd.d/vk_swiftshader_icd.json
         rm install-vulkan/share/vulkan/icd.d/vk_swiftshader_icd.json.old
     - name: Upload GLES artifacts
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4.3.3
       with:
         name: swiftshader-gles-${{ env.SWIFTSHADER_VERSION }}-${{ matrix.os }}
         path: install-gles
     - name: Upload Vulkan artifacts
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4.3.3
       with:
         name: swiftshader-vulkan-${{ env.SWIFTSHADER_VERSION }}-${{ matrix.os }}
         path: install-vulkan
@@ -258,11 +317,11 @@ jobs:
         os: [windows-2019]
     steps:
     - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@v3
+      uses: seanmiddleditch/gha-setup-ninja@v5
     - name: Set up Visual Studio environment
-      uses: seanmiddleditch/gha-setup-vsdevenv@v3
+      uses: compnerd/gha-setup-vsdevenv@v6
     - name: Clone SwiftShader
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4.1.7
       with:
         repository: google/swiftshader
         ref: ${{ env.COMMIT }}
@@ -271,12 +330,15 @@ jobs:
         # for SWIFTSHADER_VERSION.
         fetch-depth: 0
     - name: Init & update submodules, fetch version
+      # PowerShell. How any sane person could let such a horrible thing to get
+      # even released. How am I supposed to have fun typing all the fucking
+      # Camel-Dash-Case commands.
       run: |
         git -C swiftshader submodule init
         git -C swiftshader submodule update
         $SWIFTSHADER_VERSION="r$(git -C swiftshader rev-list --count HEAD).$(git -C swiftshader rev-parse --short=10 HEAD)"
         echo "version: $SWIFTSHADER_VERSION"
-        echo "SWIFTSHADER_VERSION=$SWIFTSHADER_VERSION" >> $GITHUB_ENV
+        echo "SWIFTSHADER_VERSION=$SWIFTSHADER_VERSION" | Out-File -FilePath $env:GITHUB_ENV -Append
     - name: Configure
       run: |
         cmake `
@@ -323,12 +385,12 @@ jobs:
           -replace '\.\\\\vk_swiftshader\.dll', '..\\..\\..\\bin\\vk_swiftshader.dll' `
           | Out-File -encoding UTF8 install-vulkan\share\vulkan\icd.d\vk_swiftshader_icd.json
     - name: Upload GLES artifacts
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4.3.3
       with:
         name: swiftshader-gles-${{ env.SWIFTSHADER_VERSION }}-${{ matrix.os }}
         path: install-gles
     - name: Upload Vulkan artifacts
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4.3.3
       with:
         name: swiftshader-vulkan-${{ env.SWIFTSHADER_VERSION }}-${{ matrix.os }}
         path: install-vulkan
