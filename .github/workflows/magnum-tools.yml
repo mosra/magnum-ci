@@ -212,6 +212,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
           `# https://cmake.org/cmake/help/latest/policy/CMP0095.html` \
+          `# -DCMAKE_INSTALL_RPATH="\${ORIGIN}/../lib" -DCMAKE_POLICY_DEFAULT_CMP0095=NEW, needs 3.16` \
           -DCMAKE_INSTALL_RPATH="\\\${ORIGIN}/../lib" \
           -DCORRADE_BUILD_DEPRECATED=OFF \
           -DCORRADE_WITH_TESTSUITE=OFF \
