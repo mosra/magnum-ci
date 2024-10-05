@@ -104,14 +104,14 @@ jobs:
       # apt update is needed to fetch package lists
       run: |
         apt update
-        apt install -y ninja-build cmake g++
+        apt install -y ninja-build cmake g++ git
     - name: Clone MeshOptimizer
-      # checkout v4 uses Node 20 which doesn't work on Ubuntu 18.04
-      uses: actions/checkout@v3.6.0
-      with:
-        repository: zeux/meshoptimizer
-        ref: v${{ env.MESHOPTIMIZER_VERSION }}
-        path: meshoptimizer
+      # actions/checkout@v2 and any newer uses a Node version that doesn't work
+      # on Ubuntu 18.04, v1 on the other hand clones to some completely insane
+      # location. Let's just ditch that crap.
+      run: |
+        git clone https://github.com/zeux/meshoptimizer
+        cd meshoptimizer && git checkout v${{ env.MESHOPTIMIZER_VERSION }}
     - name: Build & install
       run: |
         mkdir meshoptimizer-build && cd meshoptimizer-build
@@ -121,8 +121,9 @@ jobs:
           -G Ninja
         ninja install/strip
     - name: Upload artifacts
-      # upload-artifact v4 uses Node 20 which doesn't work on Ubuntu 18.04
-      uses: actions/upload-artifact@v3.1.3
+      # upload-artifact v4 uses Node 20 which doesn't work on Ubuntu 18.04, v3
+      # silently switched to a newer Node as well, FFS
+      uses: actions/upload-artifact@v3.0.0
       with:
         name: meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}
         path: install
