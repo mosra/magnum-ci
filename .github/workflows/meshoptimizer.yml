@@ -153,6 +153,7 @@ jobs:
           -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
           -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" \
           -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0" \
+          -DCMAKE_CXX_FLAGS="-fvisibility=hidden -fvisibility-inlines-hidden" \
           -G Ninja
         ninja install/strip
     - name: Upload artifacts
