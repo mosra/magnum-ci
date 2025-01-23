@@ -35,14 +35,16 @@ jobs:
     strategy:
       matrix:
         include:
-        - os: ubuntu-18.04
+        - os: ubuntu-20.04
+          os-deps: ubuntu-18.04
           runs-on: ubuntu-latest
-          container: ubuntu:bionic-20220427
+          container: ubuntu:focal-20241011
     steps:
     - name: Install base build tools, OpenGL and Vulkan
       # apt update is needed to fetch package lists; software-properties-common
       # is the add-apt-repository command (why that isn't included by
-      # default?!); libexpat1-dev and tzdata is then needed by the python debs
+      # default?!); libexpat1-dev is then needed by the python debs; tzdata by
+      # git and so has to be NONINTERACTIVELY installed first
       run: |
         apt update
         apt install -y libgl1-mesa-dev libvulkan-dev wget unzip chrpath ninja-build cmake g++ software-properties-common libexpat1-dev
@@ -50,79 +52,53 @@ jobs:
         # DESIGNED THIS CRAP?! https://stackoverflow.com/a/58264927
         DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata
         mkdir -p deps
-    - name: Install a newer Git version from a PPA
-      # The actions/checkout FOR SOME REASON requires Git 2.18+, while 18.04
-      # ships only with 2.17. Ultimately that means the "clones" are not
-      # actually clones, so I can't fetch version info.
+    - name: Install Git after tzdata because FUCK THIS THING
       run: |
-        add-apt-repository ppa:git-core/ppa
-        apt update
         apt install -y git
-    - name: Fetch Python debs from the no-longer-supported deadsnakes PPA
-      # The deadsnakes PPA dropped 18.04 support in June 2023, the last 18.04
-      # debs are downloaded from the archive and hosted
-      # https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa/+builds?build_text=&build_state=built
-      # https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa/+build/24906232 (3.9)
-      # https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa/+build/25962597 (3.10)
-      # https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa/+build/26277625 (3.11, in case it gets ever build)
+    - name: Install Python versions from the deadsnakes PPA
+      # I don't need any venv stuff nor pip, but setuptools (for installing the
+      # bindings package) isn't included by default so I have to install it via
+      # pip, however pip isn't included by default either so I have to
+      # bootstrap it via ensurepip, and ensurepip isn't included by default
+      # EITHER, only in the venv package. Then, ensurepip *magically* makes
+      # setuptools available although that's not really documented anywhere.
+      # What a system, wow.
       run: |
-        mkdir python-deb && cd python-deb
-        for i in libpython3.9 libpython3.9-dev libpython3.9-minimal libpython3.9-stdlib python3.9 python3.9-dev python3.9-minimal python3.9-venv; do
-          wget https://ci.magnum.graphics/py39/${i}_3.9.16-1+bionic1_amd64.deb
-        done
-        for i in python3.9-distutils python3.9-lib2to3; do
-          wget https://ci.magnum.graphics/py39/${i}_3.9.16-1+bionic1_all.deb
-        done
-        for i in libpython3.10 libpython3.10-dev libpython3.10-minimal libpython3.10-stdlib python3.10 python3.10-dev python3.10-minimal python3.10-venv; do
-          wget https://ci.magnum.graphics/py310/${i}_3.10.11-1+bionic1_amd64.deb
-        done
-        for i in python3.10-distutils python3.10-lib2to3; do
-          wget https://ci.magnum.graphics/py310/${i}_3.10.11-1+bionic1_all.deb
-        done
-        # for i in libpython3.11 libpython3.11-dev libpython3.11-minimal libpython3.11-stdlib python3.11 python3.11-dev python3.11-minimal python3.11-venv; do
-        #   wget https://ci.magnum.graphics/py311/${i}_3.11.3-1+bionic2_amd64.deb
-        # done
-        # for i in python3.11-distutils python3.11-lib2to3; do
-        #   wget https://ci.magnum.graphics/py311/${i}_3.11.3-1+bionic2_all.deb
-        # done
-        dpkg -i *.deb
+        add-apt-repository ppa:deadsnakes/ppa
+        apt update
+        apt install -y python3.9 python3.9-dev python3.9-venv python3.10 python3.10-dev python3.10-venv
         python3.9 -m ensurepip --altinstall
         python3.10 -m ensurepip --altinstall
     - name: Clone Corrade
-      # checkout v4 uses Node 20 which doesn't work on Ubuntu 18.04
-      uses: actions/checkout@v3.6.0
+      uses: actions/checkout@v4
       with:
         repository: mosra/corrade
         path: corrade
         # Needed for tags :(
         fetch-depth: 0
     - name: Clone Magnum
-      # checkout v4 uses Node 20 which doesn't work on Ubuntu 18.04
-      uses: actions/checkout@v3.6.0
+      uses: actions/checkout@v4
       with:
         repository: mosra/magnum
         path: magnum
         # Needed for tags :(
         fetch-depth: 0
     - name: Clone Magnum Plugins
-      # checkout v4 uses Node 20 which doesn't work on Ubuntu 18.04
-      uses: actions/checkout@v3.6.0
+      uses: actions/checkout@v4
       with:
         repository: mosra/magnum-plugins
         path: magnum-plugins
         # Needed for tags :(
         fetch-depth: 0
     - name: Clone Magnum Extras
-      # checkout v4 uses Node 20 which doesn't work on Ubuntu 18.04
-      uses: actions/checkout@v3.6.0
+      uses: actions/checkout@v4
       with:
         repository: mosra/magnum-extras
         path: magnum-extras
         # Needed for tags :(
         fetch-depth: 0
     - name: Clone Magnum Bindings
-      # checkout v4 uses Node 20 which doesn't work on Ubuntu 18.04
-      uses: actions/checkout@v3.6.0
+      uses: actions/checkout@v4
       with:
         repository: mosra/magnum-bindings
         path: magnum-bindings
@@ -135,43 +111,43 @@ jobs:
     - name: Fetch prebuilt SDL
       run: |
         cd deps
-        wget https://ci.magnum.graphics/sdl-${{ env.SDL_VERSION }}-${{ matrix.os }}.zip
-        unzip sdl-${{ env.SDL_VERSION }}-${{ matrix.os }}.zip
+        wget https://ci.magnum.graphics/sdl-${{ env.SDL_VERSION }}-${{ matrix.os-deps }}.zip
+        unzip sdl-${{ env.SDL_VERSION }}-${{ matrix.os-deps }}.zip
     - name: Fetch prebuilt meshoptimizer
       run: |
         cd deps
-        wget https://ci.magnum.graphics/meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}.zip
-        unzip meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}.zip
+        wget https://ci.magnum.graphics/meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os-deps }}.zip
+        unzip meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os-deps }}.zip
     - name: Fetch prebuilt Assimp
       run: |
         cd deps
-        wget https://ci.magnum.graphics/assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os }}.zip
-        unzip assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os }}.zip
+        wget https://ci.magnum.graphics/assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os-deps }}.zip
+        unzip assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os-deps }}.zip
     - name: Fetch prebuilt zlib
       run: |
         cd deps
-        wget https://ci.magnum.graphics/zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os }}.zip
-        unzip zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os }}.zip
+        wget https://ci.magnum.graphics/zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os-deps }}.zip
+        unzip zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os-deps }}.zip
     - name: Fetch prebuilt libpng
       run: |
         cd deps
-        wget https://ci.magnum.graphics/libpng-${{ env.PNG_VERSION }}-${{ matrix.os }}.zip
-        unzip libpng-${{ env.PNG_VERSION }}-${{ matrix.os }}.zip
+        wget https://ci.magnum.graphics/libpng-${{ env.PNG_VERSION }}-${{ matrix.os-deps }}.zip
+        unzip libpng-${{ env.PNG_VERSION }}-${{ matrix.os-deps }}.zip
     - name: Fetch prebuilt libjpeg-turbo
       run: |
         cd deps
-        wget https://ci.magnum.graphics/libjpeg-turbo-${{ env.JPEG_VERSION }}-${{ matrix.os }}.zip
-        unzip libjpeg-turbo-${{ env.JPEG_VERSION }}-${{ matrix.os }}.zip
+        wget https://ci.magnum.graphics/libjpeg-turbo-${{ env.JPEG_VERSION }}-${{ matrix.os-deps }}.zip
+        unzip libjpeg-turbo-${{ env.JPEG_VERSION }}-${{ matrix.os-deps }}.zip
     - name: Fetch prebuilt openexr
       run: |
         cd deps
-        wget https://ci.magnum.graphics/openexr-${{ env.OPENEXR_VERSION }}-${{ matrix.os }}.zip
-        unzip openexr-${{ env.OPENEXR_VERSION }}-${{ matrix.os }}.zip
+        wget https://ci.magnum.graphics/openexr-${{ env.OPENEXR_VERSION }}-${{ matrix.os-deps }}.zip
+        unzip openexr-${{ env.OPENEXR_VERSION }}-${{ matrix.os-deps }}.zip
     - name: Fetch prebuilt libwebp
       run: |
         cd deps
-        wget https://ci.magnum.graphics/libwebp-${{ env.WEBP_VERSION }}-${{ matrix.os }}.zip
-        unzip libwebp-${{ env.WEBP_VERSION }}-${{ matrix.os }}.zip
+        wget https://ci.magnum.graphics/libwebp-${{ env.WEBP_VERSION }}-${{ matrix.os-deps }}.zip
+        unzip libwebp-${{ env.WEBP_VERSION }}-${{ matrix.os-deps }}.zip
     - name: Fetch prebuilt zlib-ng
       # This is extracted ínto a subdirectory as it conflicts with zlib and is
       # nastily patched into FindSpng
@@ -179,30 +155,30 @@ jobs:
       #   zlib-ng got used)
       run: |
         mkdir deps/zng && cd deps/zng
-        wget https://ci.magnum.graphics/zlib-ng-${{ env.ZLIBNG_VERSION }}-${{ matrix.os }}.zip
-        unzip zlib-ng-${{ env.ZLIBNG_VERSION }}-${{ matrix.os }}.zip
+        wget https://ci.magnum.graphics/zlib-ng-${{ env.ZLIBNG_VERSION }}-${{ matrix.os-deps }}.zip
+        unzip zlib-ng-${{ env.ZLIBNG_VERSION }}-${{ matrix.os-deps }}.zip
         cd ../..
         sed -i "s^INTERFACE_LINK_LIBRARIES ZLIB::ZLIB)^INTERFACE_LINK_LIBRARIES $(pwd)/deps/zng/lib/libz.a)^" magnum-plugins/modules/FindSpng.cmake
     - name: Fetch prebuilt libspng
       run: |
         cd deps
-        wget https://ci.magnum.graphics/libspng-${{ env.SPNG_VERSION }}-${{ matrix.os }}-zng.zip
-        unzip libspng-${{ env.SPNG_VERSION }}-${{ matrix.os }}-zng.zip
+        wget https://ci.magnum.graphics/libspng-${{ env.SPNG_VERSION }}-${{ matrix.os-deps }}-zng.zip
+        unzip libspng-${{ env.SPNG_VERSION }}-${{ matrix.os-deps }}-zng.zip
     - name: Fetch prebuilt glslang
       run: |
         cd deps
-        wget https://ci.magnum.graphics/glslang-${{ env.GLSLANG_VERSION }}-${{ matrix.os }}-gcc7.zip
-        unzip glslang-${{ env.GLSLANG_VERSION }}-${{ matrix.os }}-gcc7.zip
+        wget https://ci.magnum.graphics/glslang-${{ env.GLSLANG_VERSION }}-${{ matrix.os-deps }}-gcc7.zip
+        unzip glslang-${{ env.GLSLANG_VERSION }}-${{ matrix.os-deps }}-gcc7.zip
     - name: Fetch prebuilt SPIRV-Tools
       run: |
         cd deps
-        wget https://ci.magnum.graphics/spirv-tools-${{ env.SPIRVTOOLS_VERSION }}-${{ matrix.os }}-gcc7.zip
-        unzip spirv-tools-${{ env.SPIRVTOOLS_VERSION }}-${{ matrix.os }}-gcc7.zip
+        wget https://ci.magnum.graphics/spirv-tools-${{ env.SPIRVTOOLS_VERSION }}-${{ matrix.os-deps }}-gcc7.zip
+        unzip spirv-tools-${{ env.SPIRVTOOLS_VERSION }}-${{ matrix.os-deps }}-gcc7.zip
     - name: Fetch prebuilt zstd
       run: |
         cd deps
-        wget https://ci.magnum.graphics/zstd-${{ env.ZSTD_VERSION }}-${{ matrix.os }}.zip
-        unzip zstd-${{ env.ZSTD_VERSION }}-${{ matrix.os }}.zip
+        wget https://ci.magnum.graphics/zstd-${{ env.ZSTD_VERSION }}-${{ matrix.os-deps }}.zip
+        unzip zstd-${{ env.ZSTD_VERSION }}-${{ matrix.os-deps }}.zip
     - name: Fetch Basis Universal sources
       run: |
         mkdir basis-universal && cd basis-universal
@@ -481,8 +457,7 @@ jobs:
         mv install magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ env.MAGNUM_BINDINGS_VERSION }}-linux-x64
         tar -cf magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ env.MAGNUM_BINDINGS_VERSION }}-linux-x64.tar magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ env.MAGNUM_BINDINGS_VERSION }}-linux-x64
     - name: Upload artifacts
-      # upload-artifact v4 uses Node 20 which doesn't work on Ubuntu 18.04
-      uses: actions/upload-artifact@v3.1.3
+      uses: actions/upload-artifact@v4
       with:
         name: magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ env.MAGNUM_BINDINGS_VERSION }}-linux-x64
         path: magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ env.MAGNUM_BINDINGS_VERSION }}-linux-x64.tar
@@ -493,29 +468,30 @@ jobs:
     strategy:
       matrix:
         include:
-        - os: macos12-x64-arm64
-          runs-on: macos-12
+        - os: macos13-x64-arm64
+          os-deps: macos12-x64-arm64
+          runs-on: macos-13
     steps:
     - name: Install base build tools
       run: |
         brew install ninja
         mkdir -p deps
     - name: Clone Corrade
-      uses: actions/checkout@v4.1.7
+      uses: actions/checkout@v4
       with:
         repository: mosra/corrade
         path: corrade
         # Needed for tags :(
         fetch-depth: 0
     - name: Clone Magnum
-      uses: actions/checkout@v4.1.7
+      uses: actions/checkout@v4
       with:
         repository: mosra/magnum
         path: magnum
         # Needed for tags :(
         fetch-depth: 0
     - name: Clone Magnum Plugins
-      uses: actions/checkout@v4.1.7
+      uses: actions/checkout@v4
       with:
         repository: mosra/magnum-plugins
         path: magnum-plugins
@@ -524,8 +500,8 @@ jobs:
     - name: Fetch prebuilt meshoptimizer
       run: |
         cd deps
-        wget https://ci.magnum.graphics/meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}.zip
-        unzip meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}.zip
+        wget https://ci.magnum.graphics/meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os-deps }}.zip
+        unzip meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os-deps }}.zip
     - name: Fetch Basis Universal sources
       run: |
         mkdir basis-universal && cd basis-universal
@@ -690,7 +666,7 @@ jobs:
         mv install magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ matrix.os }}
         tar -cf magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ matrix.os }}.tar magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ matrix.os }}
     - name: Upload artifacts
-      uses: actions/upload-artifact@v4.3.3
+      uses: actions/upload-artifact@v4
       # TODO add extras + bindings version once built
       with:
         name: magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ matrix.os }}
@@ -712,35 +688,35 @@ jobs:
     - name: Set up Visual Studio environment
       uses: compnerd/gha-setup-vsdevenv@v6
     - name: Clone Corrade
-      uses: actions/checkout@v4.1.7
+      uses: actions/checkout@v4
       with:
         repository: mosra/corrade
         path: corrade
         # Needed for tags :(
         fetch-depth: 0
     - name: Clone Magnum
-      uses: actions/checkout@v4.1.7
+      uses: actions/checkout@v4
       with:
         repository: mosra/magnum
         path: magnum
         # Needed for tags :(
         fetch-depth: 0
     - name: Clone Magnum Plugins
-      uses: actions/checkout@v4.1.7
+      uses: actions/checkout@v4
       with:
         repository: mosra/magnum-plugins
         path: magnum-plugins
         # Needed for tags :(
         fetch-depth: 0
     - name: Clone Magnum Extras
-      uses: actions/checkout@v4.1.7
+      uses: actions/checkout@v4
       with:
         repository: mosra/magnum-extras
         path: magnum-extras
         # Needed for tags :(
         fetch-depth: 0
     - name: Clone Magnum Bindings
-      uses: actions/checkout@v4.1.7
+      uses: actions/checkout@v4
       with:
         repository: mosra/magnum-bindings
         path: magnum-bindings
@@ -951,7 +927,7 @@ jobs:
           -G Ninja -S magnum-extras -B magnum-extras-build || exit /b
         ninja -C magnum-extras-build install || exit /b
     - name: Setup Python 3.11
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
     - name: Install Pybind11 for Python 3.11
@@ -1030,7 +1006,7 @@ jobs:
         VERSION=$(git describe --match "v*" --abbrev=4)
         echo "MAGNUM_BINDINGS_VERSION=${VERSION:9}" >> $GITHUB_ENV
     - name: Upload artifacts
-      uses: actions/upload-artifact@v4.3.3
+      uses: actions/upload-artifact@v4
       with:
         name: magnum-tools-${{ env.CORRADE_VERSION }}-${{ env.MAGNUM_VERSION }}-${{ env.MAGNUM_PLUGINS_VERSION }}-${{ env.MAGNUM_EXTRAS_VERSION }}-${{ env.MAGNUM_BINDINGS_VERSION }}-windows
         path: install
