@@ -682,7 +682,10 @@ jobs:
     strategy:
       matrix:
         include:
-        - os: windows-2019
+        # 2019 is removed as of 2025-06-30, dependencies built for it should
+        # still work tho.
+        - os: windows-2022
+          os-deps: windows-2019
     steps:
     - name: Base setup
       run: |
@@ -738,34 +741,34 @@ jobs:
     - name: Fetch prebuilt meshoptimizer
       run: |
         cd deps
-        Invoke-WebRequest https://ci.magnum.graphics/meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}.zip -OutFile meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}.zip
-        unzip meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}.zip
+        Invoke-WebRequest https://ci.magnum.graphics/meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os-deps }}.zip -OutFile meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os-deps }}.zip
+        unzip meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os-deps }}.zip
     - name: Fetch prebuilt Assimp
       run: |
         cd deps
-        Invoke-WebRequest https://ci.magnum.graphics/assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os }}.zip -OutFile assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os }}.zip
-        unzip assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os }}.zip
+        Invoke-WebRequest https://ci.magnum.graphics/assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os-deps }}.zip -OutFile assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os-deps }}.zip
+        unzip assimp-${{ env.ASSIMP_VERSION }}-${{ matrix.os-deps }}.zip
     - name: Fetch prebuilt zlib
       # Zlib is present from Assimp already, overwrite
       run: |
         cd deps
-        Invoke-WebRequest https://ci.magnum.graphics/zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os }}.zip -OutFile zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os }}.zip
-        unzip -o zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os }}.zip
+        Invoke-WebRequest https://ci.magnum.graphics/zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os-deps }}.zip -OutFile zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os-deps }}.zip
+        unzip -o zlib-${{ env.ZLIB_VERSION }}-${{ matrix.os-deps }}.zip
     - name: Fetch prebuilt libpng
       run: |
         cd deps
-        Invoke-WebRequest https://ci.magnum.graphics/libpng-${{ env.PNG_VERSION }}-${{ matrix.os }}.zip -OutFile libpng-${{ env.PNG_VERSION }}-${{ matrix.os }}.zip
-        unzip libpng-${{ env.PNG_VERSION }}-${{ matrix.os }}.zip
+        Invoke-WebRequest https://ci.magnum.graphics/libpng-${{ env.PNG_VERSION }}-${{ matrix.os-deps }}.zip -OutFile libpng-${{ env.PNG_VERSION }}-${{ matrix.os-deps }}.zip
+        unzip libpng-${{ env.PNG_VERSION }}-${{ matrix.os-deps }}.zip
     - name: Fetch prebuilt libjpeg-turbo
       run: |
         cd deps
-        Invoke-WebRequest https://ci.magnum.graphics/libjpeg-turbo-${{ env.JPEG_VERSION }}-${{ matrix.os }}.zip -OutFile libjpeg-turbo-${{ env.JPEG_VERSION }}-${{ matrix.os }}.zip
-        unzip libjpeg-turbo-${{ env.JPEG_VERSION }}-${{ matrix.os }}.zip
+        Invoke-WebRequest https://ci.magnum.graphics/libjpeg-turbo-${{ env.JPEG_VERSION }}-${{ matrix.os-deps }}.zip -OutFile libjpeg-turbo-${{ env.JPEG_VERSION }}-${{ matrix.os-deps }}.zip
+        unzip libjpeg-turbo-${{ env.JPEG_VERSION }}-${{ matrix.os-deps }}.zip
     - name: Fetch prebuilt openexr
       run: |
         cd deps
-        Invoke-WebRequest https://ci.magnum.graphics/openexr-${{ env.OPENEXR_VERSION }}-${{ matrix.os }}.zip -OutFile openexr-${{ env.OPENEXR_VERSION }}-${{ matrix.os }}.zip
-        unzip openexr-${{ env.OPENEXR_VERSION }}-${{ matrix.os }}.zip
+        Invoke-WebRequest https://ci.magnum.graphics/openexr-${{ env.OPENEXR_VERSION }}-${{ matrix.os-deps }}.zip -OutFile openexr-${{ env.OPENEXR_VERSION }}-${{ matrix.os-deps }}.zip
+        unzip openexr-${{ env.OPENEXR_VERSION }}-${{ matrix.os-deps }}.zip
     - name: Fetch prebuilt zlib-ng
       # This is extracted ínto a subdirectory as it conflicts with zlib and is
       # nastily patched into FindSpng
@@ -775,8 +778,8 @@ jobs:
         cd deps
         mkdir zng
         cd zng
-        Invoke-WebRequest https://ci.magnum.graphics/zlib-ng-${{ env.ZLIBNG_VERSION }}-${{ matrix.os }}.zip -OutFile zlib-ng-${{ env.ZLIBNG_VERSION }}-${{ matrix.os }}.zip
-        unzip zlib-ng-${{ env.ZLIBNG_VERSION }}-${{ matrix.os }}.zip
+        Invoke-WebRequest https://ci.magnum.graphics/zlib-ng-${{ env.ZLIBNG_VERSION }}-${{ matrix.os-deps }}.zip -OutFile zlib-ng-${{ env.ZLIBNG_VERSION }}-${{ matrix.os-deps }}.zip
+        unzip zlib-ng-${{ env.ZLIBNG_VERSION }}-${{ matrix.os-deps }}.zip
     - name: Patch FindSpng to use zlib-ng
       # TODO this hardcodes Actions build path (because for Bash it's /d/a
       # instead of D:/a so can't use $(pwd)), handle better
@@ -787,13 +790,13 @@ jobs:
     - name: Fetch prebuilt libspng
       run: |
         cd deps
-        Invoke-WebRequest https://ci.magnum.graphics/libspng-${{ env.SPNG_VERSION }}-${{ matrix.os }}-zng.zip -OutFile libspng-${{ env.SPNG_VERSION }}-${{ matrix.os }}-zng.zip
-        unzip libspng-${{ env.SPNG_VERSION }}-${{ matrix.os }}-zng.zip
+        Invoke-WebRequest https://ci.magnum.graphics/libspng-${{ env.SPNG_VERSION }}-${{ matrix.os-deps }}-zng.zip -OutFile libspng-${{ env.SPNG_VERSION }}-${{ matrix.os-deps }}-zng.zip
+        unzip libspng-${{ env.SPNG_VERSION }}-${{ matrix.os-deps }}-zng.zip
     - name: Fetch prebuilt zstd
       run: |
         cd deps
-        Invoke-WebRequest https://ci.magnum.graphics/zstd-${{ env.ZSTD_VERSION }}-${{ matrix.os }}.zip -OutFile zstd-${{ env.ZSTD_VERSION }}-${{ matrix.os }}.zip
-        unzip zstd-${{ env.ZSTD_VERSION }}-${{ matrix.os }}.zip
+        Invoke-WebRequest https://ci.magnum.graphics/zstd-${{ env.ZSTD_VERSION }}-${{ matrix.os-deps }}.zip -OutFile zstd-${{ env.ZSTD_VERSION }}-${{ matrix.os-deps }}.zip
+        unzip zstd-${{ env.ZSTD_VERSION }}-${{ matrix.os-deps }}.zip
     - name: Fetch Basis Universal sources
       # Fuck me, the mess with underscores is outrageous, and WHY it has
       # a v prefix in the filename but not in the extracted data?!
@@ -811,13 +814,13 @@ jobs:
     - name: Fetch prebuilt glslang
       run: |
         cd deps
-        Invoke-WebRequest https://ci.magnum.graphics/glslang-${{ env.GLSLANG_VERSION }}-${{ matrix.os }}.zip -OutFile glslang-${{ env.GLSLANG_VERSION }}-${{ matrix.os }}.zip
-        unzip glslang-${{ env.GLSLANG_VERSION }}-${{ matrix.os }}.zip
+        Invoke-WebRequest https://ci.magnum.graphics/glslang-${{ env.GLSLANG_VERSION }}-${{ matrix.os-deps }}.zip -OutFile glslang-${{ env.GLSLANG_VERSION }}-${{ matrix.os-deps }}.zip
+        unzip glslang-${{ env.GLSLANG_VERSION }}-${{ matrix.os-deps }}.zip
     - name: Fetch prebuilt SPIRV-Tools
       run: |
         cd deps
-        Invoke-WebRequest https://ci.magnum.graphics/spirv-tools-${{ env.SPIRVTOOLS_VERSION }}-${{ matrix.os }}.zip -OutFile spirv-tools-${{ env.SPIRVTOOLS_VERSION }}-${{ matrix.os }}.zip
-        unzip spirv-tools-${{ env.SPIRVTOOLS_VERSION }}-${{ matrix.os }}.zip
+        Invoke-WebRequest https://ci.magnum.graphics/spirv-tools-${{ env.SPIRVTOOLS_VERSION }}-${{ matrix.os-deps }}.zip -OutFile spirv-tools-${{ env.SPIRVTOOLS_VERSION }}-${{ matrix.os-deps }}.zip
+        unzip spirv-tools-${{ env.SPIRVTOOLS_VERSION }}-${{ matrix.os-deps }}.zip
     - name: Build & install Corrade
       shell: cmd
       run: |
