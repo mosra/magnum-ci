@@ -473,8 +473,12 @@ jobs:
           runs-on: macos-13
     steps:
     - name: Install base build tools
+      # It says "ninja is already installed" and such a warning propagates to
+      # the whole GHA UI for some reason. That's great and all, but what about
+      # all the # other warnings, from CMake and such? Hm?? Or is it just some
+      # silly exception for brew because that's what apple hipsters use??
       run: |
-        brew install ninja
+        # brew install ninja
         mkdir -p deps
     - name: Clone Corrade
       uses: actions/checkout@v4
