@@ -11,7 +11,7 @@ concurrency:
 env:
   # FFS, BEWARE, 0.20 etc without quotes gets interpreted as 0.2. Who asked for
   # numeric support in a config language?!
-  MESHOPTIMIZER_VERSION: "0.21"
+  MESHOPTIMIZER_VERSION: "0.25"
 
 jobs:
   windows:
@@ -19,14 +19,16 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2019]
+        include:
+        # 2019 is removed as of 2025-06-30
+        - os: windows-2022
     steps:
     - name: Install Ninja
       uses: seanmiddleditch/gha-setup-ninja@v5
     - name: Set up Visual Studio environment
       uses: compnerd/gha-setup-vsdevenv@v6
     - name: Clone MeshOptimizer
-      uses: actions/checkout@v4.1.7
+      uses: actions/checkout@v4
       with:
         repository: zeux/meshoptimizer
         ref: v${{ env.MESHOPTIMIZER_VERSION }}
@@ -50,26 +52,27 @@ jobs:
           -G Ninja -S meshoptimizer -B meshoptimizer-build
         ninja -C meshoptimizer-build install
     - name: Upload Debug artifacts
-      uses: actions/upload-artifact@v4.3.3
+      uses: actions/upload-artifact@v4
       with:
         name: meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}-debug
         path: install-debug
     - name: Upload Release artifacts
-      uses: actions/upload-artifact@v4.3.3
+      uses: actions/upload-artifact@v4
       with:
         name: meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}
         path: install
 
   windows-mingw:
     name: windows-mingw
-    runs-on: windows-2019
+    # 2019 is removed as of 2025-06-30
+    runs-on: windows-2022
     steps:
     - name: Install Ninja
       uses: seanmiddleditch/gha-setup-ninja@v5
     - name: Set up MinGW environment
       uses: msys2/setup-msys2@v2
     - name: Clone MeshOptimizer
-      uses: actions/checkout@v4.1.7
+      uses: actions/checkout@v4
       with:
         repository: zeux/meshoptimizer
         ref: v${{ env.MESHOPTIMIZER_VERSION }}
@@ -84,7 +87,7 @@ jobs:
           -G Ninja -S meshoptimizer -B meshoptimizer-build
         ninja -C meshoptimizer-build install/strip
     - name: Upload artifacts
-      uses: actions/upload-artifact@v4.3.3
+      uses: actions/upload-artifact@v4
       with:
         name: meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-windows-mingw
         path: install
@@ -96,15 +99,21 @@ jobs:
     strategy:
       matrix:
         include:
-        - os: ubuntu-18.04
+        - os: ubuntu-20.04
           runs-on: ubuntu-latest
-          container: ubuntu:bionic-20220427
+          container: ubuntu:focal-20241011
     steps:
     - name: Install base build tools
       # apt update is needed to fetch package lists
       run: |
         apt update
-        apt install -y ninja-build cmake g++ git
+        apt install -y ninja-build cmake g++
+        # Installing the tzdata package ASKS FOR TIMEZONE IN THE CONSOLE?! WHO
+        # DESIGNED THIS CRAP?! https://stackoverflow.com/a/58264927
+        DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata
+    - name: Install Git after tzdata because FUCK THIS THING
+      run: |
+        apt install -y git
     - name: Clone MeshOptimizer
       # actions/checkout@v2 and any newer uses a Node version that doesn't work
       # on Ubuntu 18.04, v1 on the other hand clones to some completely insane
@@ -121,9 +130,7 @@ jobs:
           -G Ninja
         ninja install/strip
     - name: Upload artifacts
-      # upload-artifact v4 uses Node 20 which doesn't work on Ubuntu 18.04, v3
-      # silently switched to a newer Node as well, FFS
-      uses: actions/upload-artifact@v3.0.0
+      uses: actions/upload-artifact@v4
       with:
         name: meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}
         path: install
@@ -134,14 +141,18 @@ jobs:
     strategy:
       matrix:
         include:
-        - os: macos12-x64-arm64
-          runs-on: macos-12
+        - os: macos13-x64-arm64
+          runs-on: macos-13
     steps:
     - name: Install base build tools
+      # It says "ninja is already installed" and such a warning propagates to
+      # the whole GHA UI for some reason. That's great and all, but what about
+      # all the # other warnings, from CMake and such? Hm?? Or is it just some
+      # silly exception for brew because that's what apple hipsters use??
       run: |
-        brew install ninja
+        # brew install ninja
     - name: Clone MeshOptimizer
-      uses: actions/checkout@v4.1.7
+      uses: actions/checkout@v4
       with:
         repository: zeux/meshoptimizer
         ref: v${{ env.MESHOPTIMIZER_VERSION }}
@@ -158,7 +169,7 @@ jobs:
           -G Ninja
         ninja install/strip
     - name: Upload artifacts
-      uses: actions/upload-artifact@v4.3.3
+      uses: actions/upload-artifact@v4
       with:
         name: meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}
         path: install
