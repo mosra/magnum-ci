@@ -63,12 +63,16 @@ jobs:
       # EITHER, only in the venv package. Then, ensurepip *magically* makes
       # setuptools available although that's not really documented anywhere.
       # What a system, wow.
+      #
+      # As of October 2025, the deadsnakes PPA doesn't provide Python 3.10
+      # because "upstream Ubuntu 22.04 has it". Well, so what, I'm on 20.04,
+      # which has only 3.8. Using 3.11 and 3.12 instead, then.
       run: |
         add-apt-repository ppa:deadsnakes/ppa
         apt update
-        apt install -y python3.9 python3.9-dev python3.9-venv python3.10 python3.10-dev python3.10-venv
-        python3.9 -m ensurepip --altinstall
-        python3.10 -m ensurepip --altinstall
+        apt install -y python3.11 python3.11-dev python3.11-venv python3.12 python3.12-dev python3.12-venv
+        python3.11 -m ensurepip --altinstall
+        python3.12 -m ensurepip --altinstall
     - name: Clone Corrade
       uses: actions/checkout@v4
       with:
@@ -303,62 +307,62 @@ jobs:
           -DMAGNUM_WITH_PLAYER=ON \
           -G Ninja
         ninja install/strip
-    - name: Install Pybind11 for Python 3.10
+    - name: Install Pybind11 for Python 3.12
       run: |
-        mkdir pybind-build-10 && cd pybind-build-10
+        mkdir pybind-build-12 && cd pybind-build-12
         cmake ../pybind11-${{ env.PYBIND_VERSION }} \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=$(pwd)/../deps-10 \
-          -DPYBIND11_PYTHON_VERSION=3.10 \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/../deps-12 \
+          -DPYBIND11_PYTHON_VERSION=3.12 \
           -DPYBIND11_TEST=OFF \
           -G Ninja
         ninja install/strip
-    - name: Build & install Magnum Bindings for Python 3.10
+    - name: Build & install Magnum Bindings for Python 3.12
       run: |
-        mkdir magnum-bindings-build-10 && cd magnum-bindings-build-10
+        mkdir magnum-bindings-build-12 && cd magnum-bindings-build-12
         cmake ../magnum-bindings \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
-          -DCMAKE_PREFIX_PATH="$(pwd)/../deps;$(pwd)/../deps-10" \
+          -DCMAKE_PREFIX_PATH="$(pwd)/../deps;$(pwd)/../deps-12" \
           `# https://cmake.org/cmake/help/latest/policy/CMP0095.html` \
           `# no install here (setuptools does), so no CMAKE_INSTALL_RPATH,` \
           `# which also means we don't need to over-escape anything` \
           -DCMAKE_BUILD_RPATH="\${ORIGIN}/../lib" \
-          -DPYBIND11_PYTHON_VERSION=3.10 \
+          -DPYBIND11_PYTHON_VERSION=3.12 \
           -DMAGNUM_WITH_PYTHON=ON \
           -G Ninja
         # We install just the version header here, the rest is done by setup.py
         ninja install/strip
         cd src/python
-        python3.10 setup.py install --install-lib=python --root="$(pwd)/../../../install"
-    - name: Install Pybind11 for Python 3.9
+        python3.12 setup.py install --install-lib=python --root="$(pwd)/../../../install"
+    - name: Install Pybind11 for Python 3.11
       run: |
-        mkdir pybind-build-9 && cd pybind-build-9
+        mkdir pybind-build-11 && cd pybind-build-11
         cmake ../pybind11-${{ env.PYBIND_VERSION }} \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=$(pwd)/../deps-9 \
-          -DPYBIND11_PYTHON_VERSION=3.9 \
+          -DCMAKE_INSTALL_PREFIX=$(pwd)/../deps-11 \
+          -DPYBIND11_PYTHON_VERSION=3.11 \
           -DPYBIND11_TEST=OFF \
           -G Ninja
         ninja install/strip
-    - name: Build & install Magnum Bindings for Python 3.9
+    - name: Build & install Magnum Bindings for Python 3.11
       run: |
-        mkdir magnum-bindings-build-9 && cd magnum-bindings-build-9
+        mkdir magnum-bindings-build-11 && cd magnum-bindings-build-11
         cmake ../magnum-bindings \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_INSTALL_PREFIX=$(pwd)/../install \
-          -DCMAKE_PREFIX_PATH="$(pwd)/../deps;$(pwd)/../deps-9" \
+          -DCMAKE_PREFIX_PATH="$(pwd)/../deps;$(pwd)/../deps-11" \
           `# https://cmake.org/cmake/help/latest/policy/CMP0095.html` \
           `# no install here (setuptools does), so no CMAKE_INSTALL_RPATH,` \
           `# which also means we don't need to over-escape anything` \
           -DCMAKE_BUILD_RPATH="\${ORIGIN}/../lib" \
-          -DPYBIND11_PYTHON_VERSION=3.9 \
+          -DPYBIND11_PYTHON_VERSION=3.11 \
           -DMAGNUM_WITH_PYTHON=ON \
           -G Ninja
         # We install just the version header here, the rest is done by setup.py
         ninja install/strip
         cd src/python
-        python3.9 setup.py install --install-lib=python --root="$(pwd)/../../../install"
+        python3.11 setup.py install --install-lib=python --root="$(pwd)/../../../install"
     # - name: Install Pybind11 for Python 3.8
     #   run: |
     #     mkdir pybind-build-8 && cd pybind-build-8
