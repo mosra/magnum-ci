@@ -35,10 +35,11 @@ jobs:
     strategy:
       matrix:
         include:
-        - os: ubuntu-20.04
+        - os: ubuntu-22.04
           os-deps: ubuntu-18.04
+          os-deps2: ubuntu-20.04
           runs-on: ubuntu-latest
-          container: ubuntu:focal-20241011
+          container: ubuntu:jammy-20251013
     steps:
     - name: Install base build tools, OpenGL and Vulkan
       # apt update is needed to fetch package lists; software-properties-common
@@ -60,19 +61,20 @@ jobs:
       # bindings package) isn't included by default so I have to install it via
       # pip, however pip isn't included by default either so I have to
       # bootstrap it via ensurepip, and ensurepip isn't included by default
-      # EITHER, only in the venv package. Then, ensurepip *magically* makes
-      # setuptools available although that's not really documented anywhere.
-      # What a system, wow.
-      #
-      # As of October 2025, the deadsnakes PPA doesn't provide Python 3.10
-      # because "upstream Ubuntu 22.04 has it". Well, so what, I'm on 20.04,
-      # which has only 3.8. Using 3.11 and 3.12 instead, then.
+      # EITHER, only in the venv package. The more I use all this, the more I
+      # hate it.
       run: |
         add-apt-repository ppa:deadsnakes/ppa
         apt update
         apt install -y python3.11 python3.11-dev python3.11-venv python3.12 python3.12-dev python3.12-venv
         python3.11 -m ensurepip --altinstall
         python3.12 -m ensurepip --altinstall
+        pip3.11 install setuptools
+        pip3.12 install setuptools
+    # TODO make a new build on 22.04 when I can be bothered
+    - name: Add a librt symlink for SPIRV-Tools that are built for 18.04
+      run: |
+        ln -s /lib/x86_64-linux-gnu/librt.so.1 /usr/lib/x86_64-linux-gnu/librt.so
     - name: Clone Corrade
       uses: actions/checkout@v4
       with:
@@ -120,8 +122,8 @@ jobs:
     - name: Fetch prebuilt meshoptimizer
       run: |
         cd deps
-        wget https://ci.magnum.graphics/meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}.zip
-        unzip meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}.zip
+        wget https://ci.magnum.graphics/meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os-deps2 }}.zip
+        unzip meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os-deps2 }}.zip
     - name: Fetch prebuilt Assimp
       run: |
         cd deps
