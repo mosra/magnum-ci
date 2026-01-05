@@ -472,9 +472,10 @@ jobs:
     strategy:
       matrix:
         include:
-        - os: macos13-x64-arm64
+        - os: macos14-x64-arm64
           os-deps: macos12-x64-arm64
-          runs-on: macos-13
+          os-deps2: macos13-x64-arm64
+          runs-on: macos-14
     steps:
     - name: Install base build tools
       # It says "ninja is already installed" and such a warning propagates to
@@ -508,8 +509,8 @@ jobs:
     - name: Fetch prebuilt meshoptimizer
       run: |
         cd deps
-        wget https://ci.magnum.graphics/meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}.zip
-        unzip meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os }}.zip
+        wget https://ci.magnum.graphics/meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os-deps2 }}.zip
+        unzip meshoptimizer-${{ env.MESHOPTIMIZER_VERSION }}-${{ matrix.os-deps2 }}.zip
     - name: Fetch Basis Universal sources
       run: |
         mkdir basis-universal && cd basis-universal
