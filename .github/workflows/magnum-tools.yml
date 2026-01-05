@@ -959,6 +959,7 @@ jobs:
           -DCMAKE_PREFIX_PATH="%CD:\=/%/deps;%CD:\=/%/SDL;%CD:\=/%/deps-11" ^
           -DPYBIND11_PYTHON_VERSION=3.11 ^
           -DMAGNUM_WITH_PYTHON=ON ^
+          -DMAGNUM_PYTHON_BINDINGS_DLL_PATH=../bin ^
           -G Ninja -S magnum-bindings -B magnum-bindings-build-11 || exit /b
         rem We install just the version header here, the rest is done by setup.py
         ninja -C magnum-bindings-build-11 install || exit /b
