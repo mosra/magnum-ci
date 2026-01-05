@@ -735,7 +735,7 @@ jobs:
         unzip v${{ env.PYBIND_VERSION }}.zip
     - name: Fetch prebuilt SDL
       run: |
-        Invoke-WebRequest http://www.libsdl.org/release/SDL2-devel-${{ env.SDL_VERSION }}-VC.zip -OutFile SDL2-devel-${{ env.SDL_VERSION }}-VC.zip
+        Invoke-WebRequest https://www.libsdl.org/release/SDL2-devel-${{ env.SDL_VERSION }}-VC.zip -OutFile SDL2-devel-${{ env.SDL_VERSION }}-VC.zip
         unzip SDL2-devel-${{ env.SDL_VERSION }}-VC.zip
         ren SDL2-${{ env.SDL_VERSION }} SDL
     - name: Fetch prebuilt meshoptimizer
